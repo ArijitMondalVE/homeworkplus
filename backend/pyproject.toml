@@ -45,6 +45,7 @@ dependencies = [
     "easyocr>=1.7.1",
     "paddlepaddle>=2.6.1",
     "paddleocr>=2.7.3",
+    "protobuf<=3.20.3",
     "opencv-python>=4.10.0",
     "pillow>=10.4.0",
     "numpy>=1.26.0",

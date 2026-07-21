@@ -37,6 +37,11 @@ class OCRAgent:
             try:
                 import os
                 os.environ["FLAGS_use_onednn"] = "0"
+                import paddle
+                try:
+                    paddle.set_flags({"FLAGS_use_onednn": 0})
+                except Exception as flag_err:
+                    logger.debug(f"[OCRAgent] Failed to set paddle flags: {flag_err}")
                 from paddleocr import PaddleOCR
                 self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
                 logger.info("[OCRAgent] PaddleOCR initialized")
