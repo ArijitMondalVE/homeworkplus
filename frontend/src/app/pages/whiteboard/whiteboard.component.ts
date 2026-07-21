@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import * as fabric from 'fabric';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -30,17 +31,20 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
 
   async initCanvas(): Promise<void> {
     try {
-      const fabric = await import('fabric');
       const canvasEl = this.canvasRef.nativeElement;
 
       // Size canvas to container
       const wrapper = canvasEl.parentElement!;
-      this.canvas = new (fabric as any).Canvas(canvasEl, {
+      this.canvas = new fabric.Canvas(canvasEl, {
         width: wrapper.clientWidth,
         height: wrapper.clientHeight,
         backgroundColor: '#ffffff',
         isDrawingMode: true,
       });
+
+      if (!this.canvas.freeDrawingBrush) {
+        this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+      }
 
       this.setTool('pen');
       this.canvas.on('path:created', () => {
@@ -58,6 +62,9 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
 
     if (tool === 'pen' || tool === 'highlighter') {
       this.canvas.isDrawingMode = true;
+      if (!this.canvas.freeDrawingBrush) {
+        this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+      }
       this.canvas.freeDrawingBrush.color = this.activeColor;
       this.canvas.freeDrawingBrush.width = tool === 'highlighter' ? 12 : this.strokeWidth;
       if (tool === 'highlighter') {
@@ -65,6 +72,9 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
       }
     } else if (tool === 'eraser') {
       this.canvas.isDrawingMode = true;
+      if (!this.canvas.freeDrawingBrush) {
+        this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
+      }
       this.canvas.freeDrawingBrush.color = '#ffffff';
       this.canvas.freeDrawingBrush.width = 20;
     } else {
@@ -75,6 +85,7 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
   applyColor(): void {
     if (!this.canvas) return;
     if (this.canvas.isDrawingMode) {
+      if (!this.canvas.freeDrawingBrush) this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
       this.canvas.freeDrawingBrush.color = this.activeColor;
     }
     const active = this.canvas.getActiveObject();
@@ -86,6 +97,7 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
 
   applyStrokeWidth(): void {
     if (this.canvas?.isDrawingMode) {
+      if (!this.canvas.freeDrawingBrush) this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
       this.canvas.freeDrawingBrush.width = this.strokeWidth;
     }
   }
@@ -96,19 +108,18 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
     this.activeTool = 'select';
 
     try {
-      const fabric = await import('fabric');
       let obj: any;
 
       const opts = { stroke: this.activeColor, strokeWidth: this.strokeWidth, fill: 'transparent', left: 100, top: 100 };
 
       if (shape === 'rect') {
-        obj = new (fabric as any).Rect({ ...opts, width: 150, height: 100 });
+        obj = new fabric.Rect({ ...opts, width: 150, height: 100 });
       } else if (shape === 'circle') {
-        obj = new (fabric as any).Circle({ ...opts, radius: 60 });
+        obj = new fabric.Circle({ ...opts, radius: 60 });
       } else if (shape === 'line') {
-        obj = new (fabric as any).Line([50, 50, 200, 200], opts);
+        obj = new fabric.Line([50, 50, 200, 200], opts);
       } else if (shape === 'arrow') {
-        obj = new (fabric as any).Line([50, 100, 200, 100], { ...opts, strokeWidth: 3 });
+        obj = new fabric.Line([50, 100, 200, 100], { ...opts, strokeWidth: 3 });
       }
 
       if (obj) {
