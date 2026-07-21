@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 os.environ["FLAGS_use_onednn"] = "0"
+os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
 from loguru import logger
 from app.workers.celery_app import celery_app
 

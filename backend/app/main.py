@@ -3,6 +3,7 @@ HomeworkPlus FastAPI Application — main entrypoint.
 """
 import os
 os.environ["FLAGS_use_onednn"] = "0"
+os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
 from contextlib import asynccontextmanager
 from pathlib import Path
 
