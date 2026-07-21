@@ -45,7 +45,13 @@ export class AuthComponent {
     this.auth.login(this.loginUsername, this.loginPassword).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
-        this.error.set(err?.error?.detail ?? 'Login failed. Please try again.');
+        let msg = 'Login failed. Please try again.';
+        if (err?.status === 0) msg = 'Could not connect to server. Is the backend running?';
+        else if (err?.status === 404) msg = 'Endpoint not found (404).';
+        else if (typeof err?.error?.detail === 'string') msg = err.error.detail;
+        else if (Array.isArray(err?.error?.detail)) msg = err.error.detail.map((e: any) => e.msg).join(', ');
+        
+        this.error.set(msg);
         this.isLoading.set(false);
       },
     });
@@ -59,7 +65,13 @@ export class AuthComponent {
     this.auth.register(this.reg).subscribe({
       next: () => this.router.navigate(['/dashboard']),
       error: (err) => {
-        this.error.set(err?.error?.detail ?? 'Registration failed. Please try again.');
+        let msg = 'Registration failed. Please try again.';
+        if (err?.status === 0) msg = 'Could not connect to server. Is the backend running?';
+        else if (err?.status === 404) msg = 'Endpoint not found (404).';
+        else if (typeof err?.error?.detail === 'string') msg = err.error.detail;
+        else if (Array.isArray(err?.error?.detail)) msg = err.error.detail.map((e: any) => e.msg).join(', ');
+        
+        this.error.set(msg);
         this.isLoading.set(false);
       },
     });

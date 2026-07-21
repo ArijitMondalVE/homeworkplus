@@ -43,7 +43,7 @@ class OCRAgent:
                 except Exception as flag_err:
                     logger.debug(f"[OCRAgent] Failed to set paddle flags: {flag_err}")
                 from paddleocr import PaddleOCR
-                self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+                self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang="en")
                 logger.info("[OCRAgent] PaddleOCR initialized")
             except ImportError:
                 logger.warning("[OCRAgent] PaddleOCR not installed")
@@ -106,7 +106,7 @@ class OCRAgent:
             return {"text": "", "confidence": 0.0, "engine": "paddleocr", "words": [], "boxes": []}
 
         try:
-            results = paddle.ocr(image_path, cls=True)
+            results = paddle.ocr(image_path)
             words = []
             confidences = []
             boxes = []

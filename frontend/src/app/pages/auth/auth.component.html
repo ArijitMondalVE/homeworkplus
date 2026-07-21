@@ -50,10 +50,11 @@
               <input
                 [type]="showPassword() ? 'text' : 'password'"
                 class="form-input"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 [(ngModel)]="loginPassword"
-                name="password"
+                name="loginPassword"
                 required
+                minlength="8"
               />
               <button type="button" class="eye-btn" (click)="showPassword.set(!showPassword())">
                 <span class="material-symbols-rounded">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
@@ -105,9 +106,9 @@
               <input
                 [type]="showPassword() ? 'text' : 'password'"
                 class="form-input"
-                placeholder="Min. 8 characters"
+                placeholder="Create a password (min 8 chars)"
                 [(ngModel)]="reg.password"
-                name="password"
+                name="regPassword"
                 required
                 minlength="8"
               />
