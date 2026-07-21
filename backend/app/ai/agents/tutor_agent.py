@@ -33,6 +33,12 @@ Response format (JSON):
 }
 """
 
+CHAT_SYSTEM_PROMPT = """You are HomeworkPlus AI Tutor, a helpful, encouraging, and friendly real-time voice assistant.
+Help the student understand academic concepts through natural, conversational dialogue.
+Keep your replies concise (1-3 sentences), warm, and clear so they are easy to read and speak.
+Do NOT output any JSON structure. Speak directly to the student in natural plain text. Use inline LaTeX ($...$) only when writing math formulas."""
+
+
 
 class TutorAgent:
     """Multi-LLM tutor agent with GPT-4o primary and Claude fallback."""
@@ -251,7 +257,7 @@ class TutorAgent:
         if llm is None:
             return {"reply": "LLM not configured.", "tokens_used": 0}
 
-        lc_messages = [SystemMessage(content=TUTOR_SYSTEM_PROMPT)]
+        lc_messages = [SystemMessage(content=CHAT_SYSTEM_PROMPT)]
         for msg in messages:
             if msg["role"] == "user":
                 lc_messages.append(HumanMessage(content=msg["content"]))
