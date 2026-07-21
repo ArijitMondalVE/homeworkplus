@@ -1,6 +1,7 @@
 """
 AI API Router — Photo upload, answer generation, chat, voice sessions.
 """
+
 import os
 import uuid
 from pathlib import Path
@@ -98,11 +99,15 @@ async def solve_from_photo(
     """Run the full Photo-to-Answer pipeline on an uploaded image."""
     # Get image
     result_img = await db.execute(
-        select(Image).where(Image.id == payload.image_id, Image.user_id == current_user.id)
+        select(Image).where(
+            Image.id == payload.image_id, Image.user_id == current_user.id
+        )
     )
     image = result_img.scalar_one_or_none()
     if not image:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
+        )
 
     # Update status
     image.processing_status = "processing"
@@ -121,7 +126,10 @@ async def solve_from_photo(
             image.processing_status = "failed"
             image.processing_error = pipeline_result["error"]
             await db.commit()
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=pipeline_result["error"])
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=pipeline_result["error"],
+            )
 
         # Update image record
         image.ocr_text = pipeline_result.get("ocr_text")
@@ -150,6 +158,7 @@ async def solve_from_photo(
 
         # Create answer record
         import json
+
         answer = Answer(
             question_id=question.id,
             user_id=current_user.id,
@@ -194,7 +203,9 @@ async def solve_from_photo(
         image.processing_status = "failed"
         image.processing_error = str(e)
         await db.commit()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.post("/ask", response_model=PhotoAnswerResponse)
@@ -318,7 +329,9 @@ async def submit_answer_feedback(
     )
     answer = result.scalar_one_or_none()
     if not answer:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Answer not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Answer not found"
+        )
 
     answer.is_helpful = payload.is_helpful
     answer.rating = payload.rating

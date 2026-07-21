@@ -60,13 +60,22 @@ export class AiService {
 
   constructor(private http: HttpClient) {}
 
-  uploadImage(file: File): Observable<{ image_id: string; filename: string; processing_status: string }> {
+  uploadImage(
+    file: File,
+  ): Observable<{
+    image_id: string;
+    filename: string;
+    processing_status: string;
+  }> {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<any>(`${this.API}/ai/upload-image`, formData);
   }
 
-  solveFromPhoto(imageId: string, options?: { language?: string; includeVoice?: boolean }): Observable<PhotoAnswerResponse> {
+  solveFromPhoto(
+    imageId: string,
+    options?: { language?: string; includeVoice?: boolean },
+  ): Observable<PhotoAnswerResponse> {
     return this.http.post<PhotoAnswerResponse>(`${this.API}/ai/solve`, {
       image_id: imageId,
       language: options?.language ?? 'en',
@@ -74,7 +83,11 @@ export class AiService {
     });
   }
 
-  askQuestion(content: string, subjectId?: string, language = 'en'): Observable<PhotoAnswerResponse> {
+  askQuestion(
+    content: string,
+    subjectId?: string,
+    language = 'en',
+  ): Observable<PhotoAnswerResponse> {
     return this.http.post<PhotoAnswerResponse>(`${this.API}/ai/ask`, {
       content,
       subject_id: subjectId,
@@ -82,7 +95,11 @@ export class AiService {
     });
   }
 
-  sendChatMessage(messages: ChatMessage[], sessionId: string, language = 'en'): Observable<ChatResponse> {
+  sendChatMessage(
+    messages: ChatMessage[],
+    sessionId: string,
+    language = 'en',
+  ): Observable<ChatResponse> {
     return this.http.post<ChatResponse>(`${this.API}/ai/chat`, {
       messages,
       session_id: sessionId,
@@ -90,7 +107,12 @@ export class AiService {
     });
   }
 
-  submitFeedback(answerId: string, rating: number, isHelpful: boolean, text?: string): Observable<any> {
+  submitFeedback(
+    answerId: string,
+    rating: number,
+    isHelpful: boolean,
+    text?: string,
+  ): Observable<any> {
     return this.http.patch(`${this.API}/ai/answers/${answerId}/feedback`, {
       is_helpful: isHelpful,
       rating,
@@ -103,15 +125,22 @@ export class AiService {
   }
 
   getLeaderboard(period = 'weekly', limit = 10): Observable<any> {
-    return this.http.get(`${this.API}/dashboard/leaderboard?period=${period}&limit=${limit}`);
+    return this.http.get(
+      `${this.API}/dashboard/leaderboard?period=${period}&limit=${limit}`,
+    );
   }
 
   getNotifications(unreadOnly = false): Observable<any[]> {
-    return this.http.get<any[]>(`${this.API}/dashboard/notifications?unread_only=${unreadOnly}`);
+    return this.http.get<any[]>(
+      `${this.API}/dashboard/notifications?unread_only=${unreadOnly}`,
+    );
   }
 
   markNotificationRead(id: string): Observable<any> {
-    return this.http.patch(`${this.API}/dashboard/notifications/${id}/read`, {});
+    return this.http.patch(
+      `${this.API}/dashboard/notifications/${id}/read`,
+      {},
+    );
   }
 
   clearRecentQuestions(): Observable<any> {

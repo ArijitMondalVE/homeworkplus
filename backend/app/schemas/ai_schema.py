@@ -1,6 +1,7 @@
 """
 Pydantic schemas for AI endpoints — image upload, answers, voice sessions, chat.
 """
+
 from uuid import UUID
 from datetime import datetime
 from typing import Any
@@ -9,6 +10,7 @@ from pydantic import BaseModel, Field
 
 
 # ── Image Upload ──────────────────────────────────────────────────────────────
+
 
 class ImageUploadResponse(BaseModel):
     image_id: UUID
@@ -21,6 +23,7 @@ class ImageUploadResponse(BaseModel):
 
 
 # ── Questions ─────────────────────────────────────────────────────────────────
+
 
 class QuestionCreate(BaseModel):
     content: str = Field(min_length=5, max_length=5000)
@@ -42,6 +45,7 @@ class QuestionResponse(BaseModel):
 
 
 # ── Answers ───────────────────────────────────────────────────────────────────
+
 
 class AnswerResponse(BaseModel):
     model_config = {"from_attributes": True}
@@ -68,8 +72,10 @@ class AnswerFeedback(BaseModel):
 
 # ── AI Pipeline ───────────────────────────────────────────────────────────────
 
+
 class PhotoAnswerRequest(BaseModel):
     """Request to run the Photo-to-Answer pipeline on an uploaded image."""
+
     image_id: UUID
     language: str = "en"
     include_voice: bool = False
@@ -91,6 +97,7 @@ class PhotoAnswerResponse(BaseModel):
 
 
 # ── Chat / Voice ──────────────────────────────────────────────────────────────
+
 
 class ChatMessage(BaseModel):
     role: str  # user, assistant
@@ -123,6 +130,7 @@ class VoiceSessionResponse(BaseModel):
 
 # ── Progress ──────────────────────────────────────────────────────────────────
 
+
 class ProgressResponse(BaseModel):
     model_config = {"from_attributes": True}
 
@@ -136,6 +144,7 @@ class ProgressResponse(BaseModel):
 
 
 # ── Leaderboard ───────────────────────────────────────────────────────────────
+
 
 class LeaderboardEntry(BaseModel):
     rank: int

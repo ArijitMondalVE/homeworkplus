@@ -8,7 +8,7 @@ import { AiService, ChatMessage } from '../../services/ai.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './voice.component.html',
-  styleUrls: ['./voice.component.css']
+  styleUrls: ['./voice.component.css'],
 })
 export class VoiceComponent implements OnDestroy {
   private aiService = inject(AiService);
@@ -30,7 +30,7 @@ export class VoiceComponent implements OnDestroy {
 
   sampleQuestions = [
     'What is the quadratic formula?',
-    'Explain Newton\'s laws of motion',
+    "Explain Newton's laws of motion",
     'How does photosynthesis work?',
     'What is the Pythagorean theorem?',
   ];
@@ -56,7 +56,7 @@ export class VoiceComponent implements OnDestroy {
       this.mediaRecorder.onstop = () => {
         const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
         this.processAudioBlob(blob);
-        stream.getTracks().forEach(t => t.stop());
+        stream.getTracks().forEach((t) => t.stop());
       };
 
       this.mediaRecorder.start(100);
@@ -104,19 +104,24 @@ export class VoiceComponent implements OnDestroy {
 
     const allMessages = [...this.messages()];
 
-    this.aiService.sendChatMessage(allMessages, this.sessionId, this.selectedLanguage).subscribe({
-      next: (res) => {
-        this.addMessage('assistant', res.reply);
-        this.isProcessing.set(false);
-        this.voiceStatus.set('done');
-        setTimeout(() => this.voiceStatus.set('idle'), 3000);
-      },
-      error: () => {
-        this.addMessage('assistant', 'Sorry, I had trouble connecting. Please try again.');
-        this.isProcessing.set(false);
-        this.voiceStatus.set('idle');
-      },
-    });
+    this.aiService
+      .sendChatMessage(allMessages, this.sessionId, this.selectedLanguage)
+      .subscribe({
+        next: (res) => {
+          this.addMessage('assistant', res.reply);
+          this.isProcessing.set(false);
+          this.voiceStatus.set('done');
+          setTimeout(() => this.voiceStatus.set('idle'), 3000);
+        },
+        error: () => {
+          this.addMessage(
+            'assistant',
+            'Sorry, I had trouble connecting. Please try again.',
+          );
+          this.isProcessing.set(false);
+          this.voiceStatus.set('idle');
+        },
+      });
   }
 
   askSample(q: string): void {
@@ -125,7 +130,7 @@ export class VoiceComponent implements OnDestroy {
   }
 
   addMessage(role: 'user' | 'assistant', content: string): void {
-    this.messages.update(msgs => [...msgs, { role, content }]);
+    this.messages.update((msgs) => [...msgs, { role, content }]);
   }
 
   clearConversation(): void {
@@ -136,14 +141,20 @@ export class VoiceComponent implements OnDestroy {
 
   getStatusIcon(): string {
     const icons: Record<string, string> = {
-      idle: 'mic', recording: 'fiber_manual_record', processing: 'hourglass_empty', done: 'check_circle',
+      idle: 'mic',
+      recording: 'fiber_manual_record',
+      processing: 'hourglass_empty',
+      done: 'check_circle',
     };
     return icons[this.voiceStatus()] ?? 'mic';
   }
 
   getStatusTitle(): string {
     const titles: Record<string, string> = {
-      idle: 'Ready to Listen', recording: 'Listening...', processing: 'Processing...', done: 'Done!',
+      idle: 'Ready to Listen',
+      recording: 'Listening...',
+      processing: 'Processing...',
+      done: 'Done!',
     };
     return titles[this.voiceStatus()] ?? '';
   }
