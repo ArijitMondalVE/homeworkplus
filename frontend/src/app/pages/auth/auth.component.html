@@ -1,0 +1,137 @@
+<div class="auth-wrapper">
+  <!-- Background particles -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="auth-container animate-fade-in">
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="logo-glow">📚</div>
+      <h1>Homework<span>Plus</span></h1>
+      <p>AI-powered learning, reimagined</p>
+    </div>
+
+    <!-- Tab Toggle -->
+    <div class="auth-tabs">
+      <button class="tab-btn" [class.active]="mode() === 'login'" (click)="mode.set('login')">
+        Sign In
+      </button>
+      <button class="tab-btn" [class.active]="mode() === 'register'" (click)="mode.set('register')">
+        Create Account
+      </button>
+    </div>
+
+    <!-- Form Card -->
+    <div class="auth-card glass-card">
+      @if (error()) {
+        <div class="alert-error">⚠️ {{ error() }}</div>
+      }
+
+      @if (mode() === 'login') {
+        <!-- Login Form -->
+        <form (ngSubmit)="onLogin()" class="auth-form">
+          <div class="form-group">
+            <label class="form-label">Username or Email</label>
+            <input
+              type="text"
+              class="form-input"
+              placeholder="username or email"
+              [(ngModel)]="loginUsername"
+              name="username"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-wrapper">
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                class="form-input"
+                placeholder="••••••••"
+                [(ngModel)]="loginPassword"
+                name="password"
+                required
+              />
+              <button type="button" class="eye-btn" (click)="showPassword.set(!showPassword())">
+                {{ showPassword() ? '👁️' : '🙈' }}
+              </button>
+            </div>
+          </div>
+          <button
+            type="submit"
+            class="btn btn-primary btn-lg w-full"
+            [disabled]="isLoading()"
+          >
+            @if (isLoading()) {
+              <span class="spinner"></span> Signing in...
+            } @else {
+              🚀 Sign In
+            }
+          </button>
+        </form>
+
+      } @else {
+        <!-- Register Form -->
+        <form (ngSubmit)="onRegister()" class="auth-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-input" placeholder="John Doe" [(ngModel)]="reg.full_name" name="full_name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Username</label>
+              <input type="text" class="form-input" placeholder="johndoe" [(ngModel)]="reg.username" name="username" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" placeholder="you@example.com" [(ngModel)]="reg.email" name="email" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Grade Level</label>
+            <select class="form-input" [(ngModel)]="reg.grade_level" name="grade_level">
+              <option value="">Select your grade</option>
+              @for (grade of grades; track grade) {
+                <option [value]="grade">{{ grade }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-wrapper">
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                class="form-input"
+                placeholder="Min. 8 characters"
+                [(ngModel)]="reg.password"
+                name="password"
+                required
+                minlength="8"
+              />
+              <button type="button" class="eye-btn" (click)="showPassword.set(!showPassword())">
+                {{ showPassword() ? '👁️' : '🙈' }}
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-full" [disabled]="isLoading()">
+            @if (isLoading()) {
+              <span class="spinner"></span> Creating account...
+            } @else {
+              ✨ Create Account
+            }
+          </button>
+        </form>
+      }
+
+      <!-- Features -->
+      <div class="auth-features">
+        <div class="feature-item">📷 Photo → Answer</div>
+        <div class="feature-item">🎙️ Voice Tutor</div>
+        <div class="feature-item">🎮 Earn XP & Badges</div>
+      </div>
+    </div>
+  </div>
+</div>

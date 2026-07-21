@@ -1,0 +1,143 @@
+.whiteboard-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 70px);
+  padding: 1rem;
+  gap: 1rem;
+  background: #050a14;
+}
+
+/* Toolbar */
+.wb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.tool-group { display: flex; align-items: center; gap: 0.25rem; }
+
+.tool-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  color: #94a3b8;
+  transition: all 150ms ease;
+}
+
+.tool-btn:hover { background: rgba(255, 255, 255, 0.08); color: #f0f4ff; }
+.tool-btn.active { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+
+.separator {
+  width: 1px;
+  height: 28px;
+  background: rgba(148, 163, 184, 0.1);
+  margin: 0 0.25rem;
+}
+
+/* Colors */
+.color-palette { display: flex; align-items: center; gap: 0.375rem; }
+
+.color-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.color-dot:hover { transform: scale(1.2); }
+.color-dot.active { border-color: white; box-shadow: 0 0 0 1px rgba(255,255,255,0.5); }
+
+.custom-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  background: transparent;
+}
+
+/* Stroke */
+.stroke-control { display: flex; align-items: center; gap: 0.5rem; }
+.stroke-label { font-size: 0.75rem; color: #64748b; white-space: nowrap; }
+.stroke-slider { width: 80px; accent-color: #7c3aed; }
+.stroke-value { font-size: 0.75rem; color: #94a3b8; width: 20px; }
+
+/* Canvas */
+.canvas-wrapper {
+  flex: 1;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.08);
+  background: #ffffff;
+}
+
+#whiteboard-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Collaborators */
+.collaborators {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.375rem;
+}
+
+.collab-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #3b82f6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  border: 2px solid white;
+  cursor: pointer;
+}
+
+/* Status */
+.wb-status {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  background: rgba(5, 10, 20, 0.7);
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

@@ -1,0 +1,56 @@
+.map-page {
+  height: calc(100vh - 70px);
+  position: relative;
+  overflow: hidden;
+}
+
+.three-container {
+  width: 100%;
+  height: 100%;
+  background: #050a14;
+}
+
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  gap: 1rem;
+}
+
+.map-header {
+  align-self: flex-start;
+  pointer-events: auto;
+  padding: 1rem 1.5rem;
+}
+.map-header h1 { font-size: 1.25rem; margin-bottom: 0.25rem; }
+.map-header p { font-size: 0.8rem; color: #64748b; }
+
+.subject-card {
+  align-self: flex-end;
+  width: 240px;
+  pointer-events: auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.subject-icon { font-size: 2.5rem; }
+.subject-card h3 { font-size: 1rem; }
+.subject-card p { font-size: 0.8rem; color: #64748b; }
+.subject-meta { display: flex; gap: 0.5rem; }
+
+.controls-hint {
+  margin-top: auto;
+  align-self: center;
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.625rem 1.5rem;
+  pointer-events: none;
+  font-size: 0.75rem;
+  color: #64748b;
+}

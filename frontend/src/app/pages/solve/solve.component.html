@@ -1,0 +1,254 @@
+<div class="solve-page">
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header animate-fade-in">
+      <h1>📷 Solve Homework</h1>
+      <p>Upload a photo or type your question — our AI will solve it step by step</p>
+    </div>
+
+    <!-- Input Mode Toggle -->
+    <div class="mode-toggle animate-fade-in">
+      <button class="mode-btn" [class.active]="inputMode() === 'photo'" (click)="inputMode.set('photo')">
+        📷 Photo Upload
+      </button>
+      <button class="mode-btn" [class.active]="inputMode() === 'text'" (click)="inputMode.set('text')">
+        ✍️ Type Question
+      </button>
+    </div>
+
+    <div class="solve-layout">
+      <!-- Left: Input Panel -->
+      <div class="input-panel glass-card animate-fade-in">
+        @if (inputMode() === 'photo') {
+          <!-- Photo Upload -->
+          <div
+            class="drop-zone"
+            [class.active]="isDragging()"
+            [class.has-file]="uploadedFile()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="isDragging.set(false)"
+            (drop)="onDrop($event)"
+            (click)="fileInput.click()"
+          >
+            <input
+              #fileInput
+              type="file"
+              accept="image/*"
+              style="display:none"
+              (change)="onFileSelected($event)"
+            />
+            @if (previewUrl()) {
+              <div class="preview-wrapper">
+                <img [src]="previewUrl()" alt="Preview" class="image-preview" />
+                <button class="remove-btn" (click)="clearFile($event)">✕ Remove</button>
+              </div>
+            } @else {
+              <div class="drop-content">
+                <div class="drop-icon">📤</div>
+                <h3>Drop your homework photo here</h3>
+                <p>or click to browse files</p>
+                <span class="drop-hint">Supports JPG, PNG, WebP (max 10MB)</span>
+              </div>
+            }
+          </div>
+
+          @if (uploadedFile()) {
+            <div class="file-options">
+              <div class="option-row">
+                <label class="form-label">Response Language</label>
+                <select class="form-input" [(ngModel)]="language">
+                  <option value="en">English</option>
+                  <option value="es">Spanish</option>
+                  <option value="fr">French</option>
+                  <option value="hi">Hindi</option>
+                  <option value="zh">Chinese</option>
+                  <option value="de">German</option>
+                </select>
+              </div>
+              <div class="option-row">
+                <label class="toggle-label">
+                  <input type="checkbox" [(ngModel)]="includeVoice" /> Generate voice answer
+                </label>
+              </div>
+            </div>
+          }
+
+          <button
+            class="btn btn-primary btn-lg w-full"
+            [disabled]="!uploadedFile() || isSolving()"
+            (click)="solvePhoto()"
+          >
+            @if (isSolving()) {
+              <span class="spinner"></span> AI is thinking...
+            } @else {
+              🤖 Solve with AI
+            }
+          </button>
+
+        } @else {
+          <!-- Text Input -->
+          <div class="text-input-section">
+            <div class="form-group">
+              <label class="form-label">Your Question</label>
+              <textarea
+                class="form-input question-textarea"
+                placeholder="e.g. Solve for x: 2x² + 5x - 3 = 0&#10;or: Explain photosynthesis&#10;or: What is Newton's second law?"
+                [(ngModel)]="textQuestion"
+                rows="6"
+              ></textarea>
+            </div>
+            <button
+              class="btn btn-primary btn-lg w-full"
+              [disabled]="!textQuestion.trim() || isSolving()"
+              (click)="solveText()"
+            >
+              @if (isSolving()) {
+                <span class="spinner"></span> AI is thinking...
+              } @else {
+                🤖 Get Answer
+              }
+            </button>
+          </div>
+        }
+
+        @if (error()) {
+          <div class="alert-error">⚠️ {{ error() }}</div>
+        }
+      </div>
+
+      <!-- Right: Answer Panel -->
+      <div class="answer-panel animate-fade-in">
+        @if (answer()) {
+          <div class="answer-card glass-card">
+            <!-- Pipeline Status -->
+            <div class="pipeline-status">
+              <span class="status-chip">✅ Answer Generated</span>
+              @if (answer()?.confidence) {
+                <span class="confidence-chip">
+                  🎯 {{ (answer()!.confidence! * 100).toFixed(0) }}% confident
+                </span>
+              }
+              @if (answer()?.processing_time_ms) {
+                <span class="time-chip">⚡ {{ answer()?.processing_time_ms }}ms</span>
+              }
+            </div>
+
+            <!-- Question -->
+            <div class="answer-section">
+              <h3>📝 Question Detected</h3>
+              <p class="question-text">{{ answer()?.question_text }}</p>
+            </div>
+
+            <!-- Main Answer -->
+            <div class="answer-section">
+              <h3>💡 Answer</h3>
+              <div class="answer-content">{{ answer()?.answer_text }}</div>
+            </div>
+
+            <!-- LaTeX -->
+            @if (answer()?.latex) {
+              <div class="answer-section">
+                <h3>📐 Mathematical Expression</h3>
+                <div class="math-block">{{ answer()?.latex }}</div>
+              </div>
+            }
+
+            <!-- Step by Step -->
+            @if (answer()?.steps?.length) {
+              <div class="answer-section">
+                <h3>🪜 Step-by-Step Solution</h3>
+                <ol class="steps-list">
+                  @for (step of answer()?.steps; track $index) {
+                    <li class="step-item">{{ step }}</li>
+                  }
+                </ol>
+              </div>
+            }
+
+            <!-- Hints -->
+            @if (answer()?.hints?.length) {
+              <div class="answer-section hints-section">
+                <h3>💭 Hints</h3>
+                <ul class="hints-list">
+                  @for (hint of answer()?.hints; track $index) {
+                    <li>{{ hint }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <!-- Voice -->
+            @if (answer()?.voice_url) {
+              <div class="answer-section">
+                <h3>🔊 Voice Explanation</h3>
+                <audio controls class="audio-player" [src]="answer()?.voice_url"></audio>
+              </div>
+            }
+
+            <!-- RAG Sources -->
+            @if (answer()?.rag_sources?.length) {
+              <div class="answer-section">
+                <h3>📚 Sources</h3>
+                <div class="sources-list">
+                  @for (src of answer()?.rag_sources?.slice(0, 3); track $index) {
+                    <div class="source-chip">📖 {{ src.title ?? 'Textbook' }}</div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Feedback -->
+            @if (!feedbackSubmitted()) {
+              <div class="feedback-section">
+                <p>Was this helpful?</p>
+                <div class="feedback-actions">
+                  <button class="btn btn-secondary btn-sm" (click)="submitFeedback(true, 5)">👍 Yes</button>
+                  <button class="btn btn-secondary btn-sm" (click)="submitFeedback(false, 2)">👎 No</button>
+                </div>
+              </div>
+            } @else {
+              <div class="feedback-done">✅ Thanks for your feedback!</div>
+            }
+          </div>
+        } @else if (!isSolving()) {
+          <!-- Empty State -->
+          <div class="empty-answer glass-card">
+            <div class="empty-visual">
+              <div class="empty-icon animate-float">🤖</div>
+              <div class="pipeline-steps">
+                <div class="pip-step">📤 Upload</div>
+                <div class="pip-arrow">→</div>
+                <div class="pip-step">👁️ Vision</div>
+                <div class="pip-arrow">→</div>
+                <div class="pip-step">📝 OCR</div>
+                <div class="pip-arrow">→</div>
+                <div class="pip-step">🧮 Math</div>
+                <div class="pip-arrow">→</div>
+                <div class="pip-step">💡 Answer</div>
+              </div>
+            </div>
+            <h3>Your AI answer will appear here</h3>
+            <p>Upload a photo or type your question to get started</p>
+          </div>
+        } @else {
+          <!-- Processing State -->
+          <div class="processing-card glass-card">
+            <div class="processing-animation">
+              <div class="pulse-ring"></div>
+              <div class="processor-icon">🤖</div>
+            </div>
+            <h3>AI Pipeline Running...</h3>
+            <div class="pipeline-progress">
+              @for (step of pipelineSteps; track step.label) {
+                <div class="pip-step-row" [class.done]="step.done" [class.active]="step.active">
+                  <span class="pip-check">{{ step.done ? '✅' : step.active ? '⏳' : '⬜' }}</span>
+                  <span>{{ step.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

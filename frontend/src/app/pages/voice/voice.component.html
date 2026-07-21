@@ -1,0 +1,134 @@
+<div class="voice-page">
+  <div class="container">
+    <div class="page-header animate-fade-in">
+      <h1>🎙️ Voice Tutor</h1>
+      <p>Speak your question — your AI tutor will answer and explain</p>
+    </div>
+
+    <div class="voice-layout">
+      <!-- Left: Voice Controls -->
+      <div class="voice-controls glass-card animate-fade-in">
+        <!-- Status Display -->
+        <div class="status-display" [class]="'status-' + voiceStatus()">
+          <div class="status-orb" [class.pulsing]="isRecording()">
+            <div class="orb-inner">{{ getStatusIcon() }}</div>
+          </div>
+          <div class="status-text">
+            <h3>{{ getStatusTitle() }}</h3>
+            <p>{{ getStatusDesc() }}</p>
+          </div>
+        </div>
+
+        <!-- Mic Visualizer -->
+        <div class="mic-visualizer" [class.active]="isRecording()">
+          @for (bar of audioBars; track $index) {
+            <div class="audio-bar" [style.height.px]="isRecording() ? bar : 8"></div>
+          }
+        </div>
+
+        <!-- Record Button -->
+        <button
+          class="record-btn"
+          [class.recording]="isRecording()"
+          [class.processing]="isProcessing()"
+          (click)="toggleRecording()"
+          [disabled]="isProcessing()"
+        >
+          @if (isRecording()) {
+            <span class="btn-icon-large">⏹️</span>
+            <span>Stop Recording</span>
+          } @else if (isProcessing()) {
+            <span class="spinner"></span>
+            <span>Processing...</span>
+          } @else {
+            <span class="btn-icon-large">🎤</span>
+            <span>Start Speaking</span>
+          }
+        </button>
+
+        <!-- Language -->
+        <div class="voice-options">
+          <label class="form-label">Language</label>
+          <select class="form-input" [(ngModel)]="selectedLanguage">
+            <option value="en">🇬🇧 English</option>
+            <option value="es">🇪🇸 Spanish</option>
+            <option value="fr">🇫🇷 French</option>
+            <option value="hi">🇮🇳 Hindi</option>
+            <option value="zh">🇨🇳 Chinese</option>
+            <option value="de">🇩🇪 German</option>
+          </select>
+        </div>
+
+        <!-- Text Input Fallback -->
+        <div class="text-fallback">
+          <p class="fallback-label">Or type your question:</p>
+          <div class="text-input-row">
+            <input
+              type="text"
+              class="form-input"
+              placeholder="Ask anything..."
+              [(ngModel)]="textInput"
+              (keyup.enter)="sendTextMessage()"
+            />
+            <button class="btn btn-primary btn-sm" (click)="sendTextMessage()" [disabled]="!textInput.trim() || isProcessing()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Conversation -->
+      <div class="conversation-panel glass-card animate-fade-in">
+        <div class="conv-header">
+          <h3>💬 Conversation</h3>
+          @if (messages().length > 0) {
+            <button class="btn btn-ghost btn-sm" (click)="clearConversation()">Clear</button>
+          }
+        </div>
+
+        <div class="messages-container" #messagesContainer>
+          @if (messages().length === 0) {
+            <div class="conv-empty">
+              <div class="empty-icon animate-float">🤖</div>
+              <h3>Your AI Tutor is ready</h3>
+              <p>Press the microphone button and ask any homework question. I'll explain it step by step!</p>
+              <div class="sample-questions">
+                <p class="sample-label">Try asking:</p>
+                @for (q of sampleQuestions; track q) {
+                  <button class="sample-q" (click)="askSample(q)">{{ q }}</button>
+                }
+              </div>
+            </div>
+          }
+
+          @for (msg of messages(); track $index) {
+            <div class="message" [class]="'message-' + msg.role">
+              <div class="msg-avatar">
+                {{ msg.role === 'user' ? '👤' : '🤖' }}
+              </div>
+              <div class="msg-bubble">
+                <p class="msg-role">{{ msg.role === 'user' ? 'You' : 'AI Tutor' }}</p>
+                <p class="msg-content">{{ msg.content }}</p>
+              </div>
+            </div>
+          }
+
+          @if (isProcessing()) {
+            <div class="message message-assistant">
+              <div class="msg-avatar">🤖</div>
+              <div class="msg-bubble typing-indicator">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- TTS Playback -->
+        @if (currentAudioUrl()) {
+          <div class="tts-player">
+            <span>🔊 AI Voice Response:</span>
+            <audio controls autoplay [src]="currentAudioUrl()" class="audio-player"></audio>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

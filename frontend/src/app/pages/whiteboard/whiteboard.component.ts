@@ -1,0 +1,175 @@
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-whiteboard',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './whiteboard.component.html',
+  styleUrls: ['./whiteboard.component.css']
+})
+export class WhiteboardComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('whiteboardCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
+
+  activeTool = 'pen';
+  activeColor = '#1e293b';
+  strokeWidth = 3;
+  strokeCount = 0;
+  userName = 'Y';
+
+  colors = ['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#ffffff'];
+
+  private canvas: any = null;
+  private history: string[] = [];
+  private historyIndex = -1;
+
+  ngAfterViewInit(): void {
+    this.initCanvas();
+  }
+
+  async initCanvas(): Promise<void> {
+    try {
+      const fabric = await import('fabric');
+      const canvasEl = this.canvasRef.nativeElement;
+
+      // Size canvas to container
+      const wrapper = canvasEl.parentElement!;
+      this.canvas = new (fabric as any).Canvas(canvasEl, {
+        width: wrapper.clientWidth,
+        height: wrapper.clientHeight,
+        backgroundColor: '#ffffff',
+        isDrawingMode: true,
+      });
+
+      this.setTool('pen');
+      this.canvas.on('path:created', () => {
+        this.strokeCount++;
+        this.saveHistory();
+      });
+    } catch (e) {
+      console.warn('Fabric.js not loaded:', e);
+    }
+  }
+
+  setTool(tool: string): void {
+    this.activeTool = tool;
+    if (!this.canvas) return;
+
+    if (tool === 'pen' || tool === 'highlighter') {
+      this.canvas.isDrawingMode = true;
+      this.canvas.freeDrawingBrush.color = this.activeColor;
+      this.canvas.freeDrawingBrush.width = tool === 'highlighter' ? 12 : this.strokeWidth;
+      if (tool === 'highlighter') {
+        this.canvas.freeDrawingBrush.color = this.activeColor + '80'; // 50% opacity
+      }
+    } else if (tool === 'eraser') {
+      this.canvas.isDrawingMode = true;
+      this.canvas.freeDrawingBrush.color = '#ffffff';
+      this.canvas.freeDrawingBrush.width = 20;
+    } else {
+      this.canvas.isDrawingMode = false;
+    }
+  }
+
+  applyColor(): void {
+    if (!this.canvas) return;
+    if (this.canvas.isDrawingMode) {
+      this.canvas.freeDrawingBrush.color = this.activeColor;
+    }
+    const active = this.canvas.getActiveObject();
+    if (active) {
+      active.set('stroke', this.activeColor);
+      this.canvas.renderAll();
+    }
+  }
+
+  applyStrokeWidth(): void {
+    if (this.canvas?.isDrawingMode) {
+      this.canvas.freeDrawingBrush.width = this.strokeWidth;
+    }
+  }
+
+  async addShape(shape: string): Promise<void> {
+    if (!this.canvas) return;
+    this.canvas.isDrawingMode = false;
+    this.activeTool = 'select';
+
+    try {
+      const fabric = await import('fabric');
+      let obj: any;
+
+      const opts = { stroke: this.activeColor, strokeWidth: this.strokeWidth, fill: 'transparent', left: 100, top: 100 };
+
+      if (shape === 'rect') {
+        obj = new (fabric as any).Rect({ ...opts, width: 150, height: 100 });
+      } else if (shape === 'circle') {
+        obj = new (fabric as any).Circle({ ...opts, radius: 60 });
+      } else if (shape === 'line') {
+        obj = new (fabric as any).Line([50, 50, 200, 200], opts);
+      } else if (shape === 'arrow') {
+        obj = new (fabric as any).Line([50, 100, 200, 100], { ...opts, strokeWidth: 3 });
+      }
+
+      if (obj) {
+        this.canvas.add(obj);
+        this.canvas.setActiveObject(obj);
+        this.canvas.renderAll();
+        this.saveHistory();
+      }
+    } catch (e) {
+      console.warn('Fabric shape error:', e);
+    }
+  }
+
+  undo(): void {
+    if (!this.canvas || this.historyIndex <= 0) return;
+    this.historyIndex--;
+    this.loadHistory(this.history[this.historyIndex]);
+  }
+
+  redo(): void {
+    if (!this.canvas || this.historyIndex >= this.history.length - 1) return;
+    this.historyIndex++;
+    this.loadHistory(this.history[this.historyIndex]);
+  }
+
+  clearCanvas(): void {
+    if (!this.canvas) return;
+    this.canvas.clear();
+    this.canvas.backgroundColor = '#ffffff';
+    this.canvas.renderAll();
+    this.strokeCount = 0;
+    this.saveHistory();
+  }
+
+  saveCanvas(): void {
+    if (!this.canvas) return;
+    const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1 });
+    const link = document.createElement('a');
+    link.download = `whiteboard-${Date.now()}.png`;
+    link.href = dataURL;
+    link.click();
+  }
+
+  private saveHistory(): void {
+    if (!this.canvas) return;
+    const json = JSON.stringify(this.canvas.toJSON());
+    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.push(json);
+    this.historyIndex = this.history.length - 1;
+  }
+
+  private loadHistory(json: string): void {
+    this.canvas.loadFromJSON(json, () => this.canvas.renderAll());
+  }
+
+  ngOnDestroy(): void {
+    if (this.canvas) {
+      this.canvas.dispose();
+    }
+  }
+
+  // FormsModule needed for ngModel in toolbar
+  [key: string]: any;
+}

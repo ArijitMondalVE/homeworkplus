@@ -1,0 +1,75 @@
+<div class="whiteboard-page">
+  <!-- Toolbar -->
+  <div class="wb-toolbar glass-card">
+    <!-- Tools -->
+    <div class="tool-group">
+      <button class="tool-btn" [class.active]="activeTool === 'select'" (click)="setTool('select')" data-tooltip="Select">🖱️</button>
+      <button class="tool-btn" [class.active]="activeTool === 'pen'" (click)="setTool('pen')" data-tooltip="Pen">✏️</button>
+      <button class="tool-btn" [class.active]="activeTool === 'highlighter'" (class.active)="activeTool === 'highlighter'" (click)="setTool('highlighter')" data-tooltip="Highlight">🖊️</button>
+      <button class="tool-btn" [class.active]="activeTool === 'eraser'" (click)="setTool('eraser')" data-tooltip="Eraser">🧹</button>
+      <button class="tool-btn" [class.active]="activeTool === 'text'" (click)="setTool('text')" data-tooltip="Text">T</button>
+    </div>
+
+    <div class="separator"></div>
+
+    <!-- Shapes -->
+    <div class="tool-group">
+      <button class="tool-btn" (click)="addShape('rect')" data-tooltip="Rectangle">▭</button>
+      <button class="tool-btn" (click)="addShape('circle')" data-tooltip="Circle">○</button>
+      <button class="tool-btn" (click)="addShape('line')" data-tooltip="Line">╱</button>
+      <button class="tool-btn" (click)="addShape('arrow')" data-tooltip="Arrow">→</button>
+    </div>
+
+    <div class="separator"></div>
+
+    <!-- Color Picker -->
+    <div class="color-palette">
+      @for (color of colors; track color) {
+        <button
+          class="color-dot"
+          [style.background]="color"
+          [class.active]="activeColor === color"
+          (click)="activeColor = color; applyColor()"
+        ></button>
+      }
+      <input type="color" class="custom-color" [(ngModel)]="activeColor" (change)="applyColor()" title="Custom color" />
+    </div>
+
+    <div class="separator"></div>
+
+    <!-- Stroke Width -->
+    <div class="stroke-control">
+      <span class="stroke-label">Size</span>
+      <input type="range" min="1" max="20" [(ngModel)]="strokeWidth" (input)="applyStrokeWidth()" class="stroke-slider" />
+      <span class="stroke-value">{{ strokeWidth }}</span>
+    </div>
+
+    <div class="separator"></div>
+
+    <!-- Actions -->
+    <div class="tool-group">
+      <button class="tool-btn" (click)="undo()" data-tooltip="Undo">↩</button>
+      <button class="tool-btn" (click)="redo()" data-tooltip="Redo">↪</button>
+      <button class="tool-btn" (click)="clearCanvas()" data-tooltip="Clear">🗑️</button>
+      <button class="tool-btn" (click)="saveCanvas()" data-tooltip="Save PNG">💾</button>
+    </div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div class="canvas-wrapper">
+    <canvas #whiteboardCanvas id="whiteboard-canvas"></canvas>
+
+    <!-- Collaborators -->
+    <div class="collaborators">
+      <div class="collab-avatar" data-tooltip="You (online)">
+        {{ userName }}
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="wb-status">
+      <span class="status-dot"></span>
+      {{ strokeCount }} strokes
+    </div>
+  </div>
+</div>

@@ -1,0 +1,56 @@
+<div class="subjects-page">
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header animate-fade-in">
+      <h1>📖 Subjects</h1>
+      <p>Browse all subjects and start solving homework</p>
+    </div>
+
+    <!-- Search + Filter -->
+    <div class="search-bar glass-card animate-fade-in">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search subjects..."
+        (input)="onSearch($event)"
+      />
+      <div class="filter-pills">
+        @for (diff of difficulties; track diff) {
+          <button class="filter-pill" [class.active]="activeFilter() === diff" (click)="activeFilter.set(diff)">
+            {{ diff }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Subjects Grid -->
+    <div class="subjects-grid animate-fade-in">
+      @for (subject of filteredSubjects(); track subject.id) {
+        <div class="subject-card" [style.--accent]="subject.color">
+          <div class="card-header">
+            <div class="subject-icon">{{ subject.icon }}</div>
+            <div class="diff-badge">{{ subject.difficulty }}</div>
+          </div>
+
+          <h3>{{ subject.name }}</h3>
+          <p class="subject-desc">{{ subject.description }}</p>
+
+          <div class="topics">
+            @for (topic of subject.topics.slice(0, 3); track topic) {
+              <span class="topic-chip">{{ topic }}</span>
+            }
+            @if (subject.topics.length > 3) {
+              <span class="topic-chip more">+{{ subject.topics.length - 3 }} more</span>
+            }
+          </div>
+
+          <div class="card-footer">
+            <span class="q-count">📝 {{ subject.questionCount }} questions</span>
+            <a routerLink="/solve" class="btn btn-primary btn-sm">Solve →</a>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

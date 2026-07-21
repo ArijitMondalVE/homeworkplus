@@ -1,0 +1,34 @@
+<div class="map-page">
+  <!-- 3D Canvas -->
+  <div #threeContainer class="three-container"></div>
+
+  <!-- UI Overlay -->
+  <div class="map-overlay">
+    <div class="map-header glass-card">
+      <h1>🌌 3D Learning Universe</h1>
+      <p>Click on any subject to explore lessons</p>
+    </div>
+
+    <!-- Selected Subject Card -->
+    @if (selectedSubject) {
+      <div class="subject-card glass-card animate-fade-in">
+        <div class="subject-icon">{{ selectedSubject.icon }}</div>
+        <h3>{{ selectedSubject.name }}</h3>
+        <p>{{ selectedSubject.description }}</p>
+        <div class="subject-meta">
+          <span class="badge badge-blue">📚 {{ selectedSubject.lessonCount }} Lessons</span>
+        </div>
+        <button class="btn btn-primary btn-sm" (click)="exploreSubject()">
+          Explore → 
+        </button>
+      </div>
+    }
+
+    <!-- Controls Help -->
+    <div class="controls-hint glass-card">
+      <span>🖱️ Drag to rotate</span>
+      <span>🔍 Scroll to zoom</span>
+      <span>👆 Click to select</span>
+    </div>
+  </div>
+</div>

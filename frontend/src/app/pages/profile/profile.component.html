@@ -1,0 +1,99 @@
+<div class="profile-page">
+  <div class="container">
+
+    <!-- Profile Hero -->
+    <div class="profile-hero glass-card animate-fade-in">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="profile-avatar">
+          <div class="avatar-ring">
+            <div class="avatar-inner">
+              {{ auth.currentUser()?.username?.[0]?.toUpperCase() }}
+            </div>
+          </div>
+          <div class="level-badge">Lv.{{ auth.currentUser()?.level }}</div>
+        </div>
+
+        <div class="profile-info">
+          <h1>{{ auth.currentUser()?.full_name }}</h1>
+          <p class="username">&#64;{{ auth.currentUser()?.username }}</p>
+          @if (auth.currentUser()?.grade_level) {
+            <span class="badge badge-blue">🎓 {{ auth.currentUser()?.grade_level }}</span>
+          }
+        </div>
+
+        <div class="profile-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-value">⚡ {{ auth.currentUser()?.xp_points | number }}</span>
+            <span class="hero-stat-label">Total XP</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-value">🔥 {{ auth.currentUser()?.streak_days }}</span>
+            <span class="hero-stat-label">Day Streak</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat-value">✅ {{ auth.currentUser()?.total_questions_solved | number }}</span>
+            <span class="hero-stat-label">Solved</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- XP Progress Bar -->
+      <div class="xp-progress-section">
+        <div class="xp-labels">
+          <span>Level {{ auth.currentUser()?.level }}</span>
+          <span>{{ auth.currentUser()?.xp_points | number }} / {{ nextLevelXp() | number }} XP</span>
+          <span>Level {{ (auth.currentUser()?.level ?? 0) + 1 }}</span>
+        </div>
+        <div class="xp-bar-track">
+          <div class="xp-bar-fill" [style.width.%]="xpProgressPct()"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="profile-grid">
+
+      <!-- Badges / Achievements -->
+      <div class="achievements-panel glass-card animate-fade-in">
+        <h3>🏆 Achievements</h3>
+        <div class="badges-grid">
+          @for (badge of badges; track badge.name) {
+            <div class="badge-card" [class.earned]="badge.earned" [class.rare]="badge.rare">
+              <div class="badge-icon">{{ badge.icon }}</div>
+              <div class="badge-name">{{ badge.name }}</div>
+              <div class="badge-xp">+{{ badge.xp }} XP</div>
+              @if (!badge.earned) {
+                <div class="badge-lock">🔒</div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Activity Timeline -->
+      <div class="activity-panel glass-card animate-fade-in">
+        <h3>📊 Activity Overview</h3>
+        <div class="activity-chart">
+          @for (day of activityDays; track day.label) {
+            <div class="activity-col" [title]="day.label + ': ' + day.count + ' questions'">
+              <div class="activity-bar" [style.height.%]="day.height" [style.background]="getBarColor(day.count)"></div>
+              <span class="day-label">{{ day.label }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="activity-stats">
+          <div class="act-stat">
+            <span class="act-value">📚 {{ auth.currentUser()?.total_study_minutes ?? 0 | number }}</span>
+            <span class="act-label">Study Minutes</span>
+          </div>
+          <div class="act-stat">
+            <span class="act-value">🌐 {{ auth.currentUser()?.preferred_language?.toUpperCase() }}</span>
+            <span class="act-label">Language</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

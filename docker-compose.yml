@@ -1,0 +1,108 @@
+version: "3.9"
+
+services:
+  # ── Backend (FastAPI) ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: homeworkplus-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    environment:
+      - NEONDB_URL=${NEONDB_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - APP_ENV=development
+      - DEBUG=true
+    depends_on:
+      - redis
+      - chromadb
+    networks:
+      - homeworkplus-net
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Celery Worker ──────────────────────────────────────────────────
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: homeworkplus-celery
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    environment:
+      - NEONDB_URL=${NEONDB_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - redis
+      - chromadb
+    networks:
+      - homeworkplus-net
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app worker --loglevel=info -Q ai,rag,voice
+
+  # ── Redis ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: homeworkplus-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - homeworkplus-net
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # ── ChromaDB ───────────────────────────────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: homeworkplus-chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - homeworkplus-net
+    restart: unless-stopped
+
+  # ── Frontend (Angular) ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: homeworkplus-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - homeworkplus-net
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  chroma_data:
+  uploads_data:
+
+networks:
+  homeworkplus-net:
+    driver: bridge
