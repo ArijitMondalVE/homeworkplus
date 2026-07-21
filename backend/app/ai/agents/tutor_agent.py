@@ -40,6 +40,7 @@ class TutorAgent:
     def __init__(self):
         self._openai_client = None
         self._anthropic_client = None
+        self._groq_client = None
 
     def _get_openai(self):
         if self._openai_client is None and settings.OPENAI_API_KEY:
@@ -63,6 +64,20 @@ class TutorAgent:
             )
         return self._anthropic_client
 
+    def _get_groq(self):
+        if self._groq_client is None and settings.GROQ_API_KEY:
+            try:
+                from langchain_groq import ChatGroq
+                self._groq_client = ChatGroq(
+                    model=settings.GROQ_MODEL,
+                    api_key=settings.GROQ_API_KEY,
+                    temperature=0.3,
+                    max_tokens=4096,
+                )
+            except ImportError:
+                logger.warning("[TutorAgent] langchain-groq not installed. Run: uv add langchain-groq")
+        return self._groq_client
+
     async def generate_answer(
         self,
         question: str,
@@ -76,11 +91,16 @@ class TutorAgent:
         """
         prompt = self._build_prompt(question, context, rag_sources, language, question_type)
 
-        llm = (
-            self._get_openai()
-            if settings.PRIMARY_LLM == "openai"
-            else self._get_anthropic()
-        )
+        if settings.PRIMARY_LLM == "groq":
+            llm = self._get_groq()
+        elif settings.PRIMARY_LLM == "anthropic":
+            llm = self._get_anthropic()
+        else:
+            llm = self._get_openai()
+
+        if llm is None:
+            # Try any available LLM in priority order
+            llm = self._get_groq() or self._get_anthropic() or self._get_openai()
 
         if llm is None:
             logger.warning("[TutorAgent] No LLM configured, using mock response")
@@ -109,23 +129,33 @@ class TutorAgent:
             return await self._fallback_generate(question, prompt, e)
 
     async def _fallback_generate(self, question: str, prompt: str, original_error: Exception) -> dict[str, Any]:
-        """Try alternate LLM if primary fails."""
-        fallback = self._get_anthropic() if settings.PRIMARY_LLM == "openai" else self._get_openai()
-        if fallback is None:
-            return self._mock_response(question)
+        """Try alternate LLMs if primary fails: tries all available providers."""
+        candidates = []
+        if settings.PRIMARY_LLM != "groq":
+            candidates.append(("groq", self._get_groq()))
+        if settings.PRIMARY_LLM != "anthropic":
+            candidates.append(("anthropic", self._get_anthropic()))
+        if settings.PRIMARY_LLM != "openai":
+            candidates.append(("openai", self._get_openai()))
 
-        try:
-            messages = [
-                SystemMessage(content=TUTOR_SYSTEM_PROMPT),
-                HumanMessage(content=prompt),
-            ]
-            response = await fallback.ainvoke(messages)
-            result = self._parse_llm_response(response.content)
-            result["llm_provider"] = "anthropic" if settings.PRIMARY_LLM == "openai" else "openai"
-            return result
-        except Exception as e2:
-            logger.error(f"[TutorAgent] Fallback LLM also failed: {e2}")
-            return self._mock_response(question)
+        for provider_name, fallback in candidates:
+            if fallback is None:
+                continue
+            try:
+                messages = [
+                    SystemMessage(content=TUTOR_SYSTEM_PROMPT),
+                    HumanMessage(content=prompt),
+                ]
+                response = await fallback.ainvoke(messages)
+                result = self._parse_llm_response(response.content)
+                result["llm_provider"] = provider_name
+                logger.info(f"[TutorAgent] Fallback succeeded with {provider_name}")
+                return result
+            except Exception as e:
+                logger.warning(f"[TutorAgent] Fallback {provider_name} also failed: {e}")
+
+        logger.error("[TutorAgent] All LLMs failed, returning mock response")
+        return self._mock_response(question)
 
     def _build_prompt(
         self,
@@ -207,7 +237,7 @@ class TutorAgent:
         """Generate a conversational response for the chat tutor."""
         from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-        llm = self._get_openai() or self._get_anthropic()
+        llm = self._get_groq() or self._get_openai() or self._get_anthropic()
         if llm is None:
             return {"reply": "LLM not configured.", "tokens_used": 0}
 

@@ -44,7 +44,9 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-4-5"
-    PRIMARY_LLM: Literal["openai", "anthropic"] = "openai"
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    PRIMARY_LLM: Literal["openai", "anthropic", "groq"] = "openai"
 
     # ── ChromaDB ──────────────────────────────────────────────────
     CHROMADB_HOST: str = "localhost"

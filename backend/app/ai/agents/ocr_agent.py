@@ -33,21 +33,12 @@ class OCRAgent:
         return self._easy_ocr
 
     def _get_paddleocr(self):
-        if self._paddle_ocr is None:
-            try:
-                import os
-                os.environ["FLAGS_use_onednn"] = "0"
-                import paddle
-                try:
-                    paddle.set_flags({"FLAGS_use_onednn": 0})
-                except Exception as flag_err:
-                    logger.debug(f"[OCRAgent] Failed to set paddle flags: {flag_err}")
-                from paddleocr import PaddleOCR
-                self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
-                logger.info("[OCRAgent] PaddleOCR initialized")
-            except ImportError:
-                logger.warning("[OCRAgent] PaddleOCR not installed")
-        return self._paddle_ocr
+        # PaddleOCR is disabled: paddlepaddle 3.x causes a circular import
+        # error ("partially initialized module 'paddle' has no attribute
+        # 'tensor'") on Windows CPU. EasyOCR handles all OCR tasks instead.
+        logger.debug("[OCRAgent] PaddleOCR disabled — using EasyOCR only")
+        return None
+
 
     def extract_text(self, image_path: str, engine: str = "easyocr") -> dict[str, Any]:
         """
