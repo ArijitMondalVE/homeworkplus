@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     # ── Security ─────────────────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production-at-least-32-characters-long"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 5256000
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 3650
 
     # ── Database (NeonDB) ─────────────────────────────────────────
     NEONDB_URL: str = ""
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
 
     # ── AI / LLM ──────────────────────────────────────────────────
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MODEL: str = "gpt-4o"
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-4-5"
     GROQ_API_KEY: str = ""

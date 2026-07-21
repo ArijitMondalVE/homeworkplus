@@ -131,6 +131,7 @@ class PhotoAnswerPipeline:
                 rag_sources=rag_sources,
                 language=language,
                 question_type=question_type,
+                image_path=enhanced_path,
             )
 
             result["answer"] = llm_result.get("answer", "")

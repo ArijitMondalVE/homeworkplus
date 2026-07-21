@@ -85,6 +85,7 @@ class TutorAgent:
         rag_sources: list[dict] | None = None,
         language: str = "en",
         question_type: str = "general",
+        image_path: str | None = None,
     ) -> dict[str, Any]:
         """
         Generate a comprehensive answer with steps, hints, and explanation.
@@ -107,10 +108,46 @@ class TutorAgent:
             return self._mock_response(question)
 
         try:
-            messages = [
-                SystemMessage(content=TUTOR_SYSTEM_PROMPT),
-                HumanMessage(content=prompt),
-            ]
+            # Build messages: use multimodal format if image is provided and supported
+            if image_path and (settings.PRIMARY_LLM in ["openai", "anthropic"]):
+                import base64
+                try:
+                    mime_type = "image/jpeg"
+                    if image_path.lower().endswith(".png"):
+                        mime_type = "image/png"
+                    elif image_path.lower().endswith(".webp"):
+                        mime_type = "image/webp"
+                    elif image_path.lower().endswith(".gif"):
+                        mime_type = "image/gif"
+                    
+                    with open(image_path, "rb") as f:
+                        base64_image = base64.b64encode(f.read()).decode("utf-8")
+                    
+                    content = [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{base64_image}"
+                            }
+                        }
+                    ]
+                    messages = [
+                        SystemMessage(content=TUTOR_SYSTEM_PROMPT),
+                        HumanMessage(content=content)
+                    ]
+                except Exception as img_err:
+                    logger.warning(f"[TutorAgent] Multimodal content building failed: {img_err}")
+                    messages = [
+                        SystemMessage(content=TUTOR_SYSTEM_PROMPT),
+                        HumanMessage(content=prompt)
+                    ]
+            else:
+                messages = [
+                    SystemMessage(content=TUTOR_SYSTEM_PROMPT),
+                    HumanMessage(content=prompt)
+                ]
+
             response = await llm.ainvoke(messages)
             content = response.content
 
