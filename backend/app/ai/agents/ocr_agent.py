@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from loguru import logger
+from app.config import settings
 
 
 class OCRAgent:
@@ -53,9 +54,14 @@ class OCRAgent:
         Extract text from image.
         Returns: {text, confidence, engine, words, boxes}
         """
+        if settings.OPENAI_API_KEY:
+            engine = "gpt4o"
+
         logger.info(f"[OCRAgent] Extracting text from {image_path} using {engine}")
 
-        if engine == "easyocr":
+        if engine == "gpt4o":
+            return self._extract_gpt4o(image_path)
+        elif engine == "easyocr":
             return self._extract_easyocr(image_path)
         elif engine == "paddleocr":
             return self._extract_paddleocr(image_path)
@@ -259,8 +265,66 @@ class OCRAgent:
             logger.error(f"[OCRAgent] Tesseract failed: {e}")
             return {"text": "", "confidence": 0.0, "engine": "tesseract", "words": [], "boxes": []}
 
+    def _extract_gpt4o(self, image_path: str) -> dict[str, Any]:
+        """Extract text from image using GPT-4o Vision API directly to save RAM."""
+        try:
+            import base64
+            from openai import OpenAI
+
+            if not settings.OPENAI_API_KEY:
+                logger.warning("[OCRAgent] No OpenAI key for GPT-4o vision OCR")
+                return {"text": "", "confidence": 0.0, "engine": "gpt4o", "words": [], "boxes": []}
+
+            mime_type = "image/jpeg"
+            if image_path.lower().endswith(".png"):
+                mime_type = "image/png"
+            elif image_path.lower().endswith(".webp"):
+                mime_type = "image/webp"
+
+            with open(image_path, "rb") as f:
+                base64_image = base64.b64encode(f.read()).decode("utf-8")
+
+            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a precise OCR agent. Extract all text, equations, and math formulas from the image. Normalize division signs to / and multiplication signs to *. Do not add conversational text. Only reply with the extracted text."
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Extract all text and equations from this image:"},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:{mime_type};base64,{base64_image}"}
+                            }
+                        ]
+                    }
+                ],
+                max_tokens=1000,
+                temperature=0.0
+            )
+            
+            extracted_text = response.choices[0].message.content.strip()
+            return {
+                "text": extracted_text,
+                "confidence": 0.99,
+                "engine": "gpt4o",
+                "words": extracted_text.split(),
+                "boxes": []
+            }
+        except Exception as e:
+            logger.error(f"[OCRAgent] GPT-4o Vision OCR failed: {e}")
+            return {"text": "", "confidence": 0.0, "engine": "gpt4o", "words": [], "boxes": []}
+
     def extract_with_best_engine(self, image_path: str) -> dict[str, Any]:
         """Run all available engines and return the higher confidence result."""
+        if settings.OPENAI_API_KEY:
+            logger.info("[OCRAgent] Using GPT-4o Vision as the best engine for OCR")
+            return self._extract_gpt4o(image_path)
+
         results = []
         
         # EasyOCR
