@@ -169,3 +169,15 @@ async def mark_notification_read(
     notif.is_read = True
     await db.commit()
     return {"message": "Marked as read"}
+
+
+@router.delete("/questions/clear")
+async def clear_recent_questions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete all questions (recent activity) for the current user."""
+    from sqlalchemy import delete
+    await db.execute(delete(Question).where(Question.user_id == current_user.id))
+    await db.commit()
+    return {"message": "Recent activity cleared successfully"}
