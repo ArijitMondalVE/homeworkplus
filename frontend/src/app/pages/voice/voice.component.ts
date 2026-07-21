@@ -82,12 +82,12 @@ export class VoiceComponent implements OnDestroy {
     this.isProcessing.set(true);
     
     this.aiService.transcribeAudio(blob, this.selectedLanguage).subscribe({
-      next: (res) => {
+      next: (res: { text: string }) => {
         const transcript = res.text || 'Could not understand audio.';
         this.addMessage('user', transcript);
         this.sendToChatApi(transcript);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Transcription failed:', err);
         this.addMessage('assistant', 'Sorry, I had trouble hearing you. Please try again.');
         this.isProcessing.set(false);

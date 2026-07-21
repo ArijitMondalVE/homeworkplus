@@ -59,16 +59,6 @@ export class AiService {
   private readonly API = `${environment.apiUrl}`;
 
   constructor(private http: HttpClient) {}
-
-<<<<<<< Updated upstream
-  uploadImage(
-    file: File,
-  ): Observable<{
-    image_id: string;
-    filename: string;
-    processing_status: string;
-  }> {
-=======
   transcribeAudio(blob: Blob, language = 'en'): Observable<{ text: string }> {
     const formData = new FormData();
     formData.append('file', blob, 'audio.webm');
@@ -76,8 +66,13 @@ export class AiService {
     return this.http.post<{ text: string }>(`${this.API}/ai/voice/transcribe`, formData);
   }
 
-  uploadImage(file: File): Observable<{ image_id: string; filename: string; processing_status: string }> {
->>>>>>> Stashed changes
+  uploadImage(
+    file: File,
+  ): Observable<{
+    image_id: string;
+    filename: string;
+    processing_status: string;
+  }> {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<any>(`${this.API}/ai/upload-image`, formData);
