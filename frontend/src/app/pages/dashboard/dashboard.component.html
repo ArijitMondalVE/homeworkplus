@@ -85,7 +85,12 @@
       <div class="recent-questions glass-card animate-fade-in">
         <div class="section-header">
           <h3><span class="material-symbols-rounded">history</span> Recent Activity</h3>
-          <a routerLink="/solve" class="btn btn-ghost btn-sm">View All</a>
+          <div class="header-actions">
+            @if (stats()?.recent_questions?.length) {
+              <button (click)="confirmClear()" class="btn btn-ghost btn-sm text-danger">🗑️ Clear</button>
+            }
+            <a routerLink="/solve" class="btn btn-ghost btn-sm">View All</a>
+          </div>
         </div>
         @if (isLoading()) {
           <div class="loading-state">
@@ -153,3 +158,22 @@
     </div>
   </div>
 </div>
+
+<!-- Custom Confirmation Modal -->
+@if (showConfirmModal()) {
+  <div class="modal-backdrop animate-fade-in" (click)="cancelClear()">
+    <div class="modal-card glass-card animate-zoom-in" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="warning-icon-wrapper">⚠️</div>
+        <h2>Clear Activity History?</h2>
+      </div>
+      <div class="modal-body">
+        <p>This will permanently delete all your recent scanned questions and solutions. This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cancelClear()">Cancel</button>
+        <button class="btn btn-danger" (click)="clearRecentActivity()">Yes, Clear History</button>
+      </div>
+    </div>
+  </div>
+}
