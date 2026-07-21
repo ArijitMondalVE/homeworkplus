@@ -70,16 +70,16 @@ export class DashboardComponent implements OnInit {
 
   getTypeIcon(type: string): string {
     const map: Record<string, string> = {
-      math: '🔢', physics: '⚡', chemistry: '🧪',
-      calculus: '∫', biology: '🧬', general: '📖',
+      math: 'calculate', physics: 'bolt', chemistry: 'science',
+      calculus: 'functions', biology: 'biotech', general: 'menu_book',
     };
-    return map[type] ?? '📖';
+    return map[type] ?? 'menu_book';
   }
 
-  getRankEmoji(rank: number): string {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return `#${rank}`;
+  getRankIcon(rank: number): string {
+    if (rank === 1) return 'looks_one';
+    if (rank === 2) return 'looks_two';
+    if (rank === 3) return 'looks_3';
+    return '';
   }
 }

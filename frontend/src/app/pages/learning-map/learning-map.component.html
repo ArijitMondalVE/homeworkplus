@@ -5,18 +5,18 @@
   <!-- UI Overlay -->
   <div class="map-overlay">
     <div class="map-header glass-card">
-      <h1>🌌 3D Learning Universe</h1>
+      <h1><span class="material-symbols-rounded" style="font-size: inherit; vertical-align: bottom;">explore</span> 3D Learning Universe</h1>
       <p>Click on any subject to explore lessons</p>
     </div>
 
     <!-- Selected Subject Card -->
     @if (selectedSubject) {
       <div class="subject-card glass-card animate-fade-in">
-        <div class="subject-icon">{{ selectedSubject.icon }}</div>
+        <div class="subject-icon"><span class="material-symbols-rounded" style="font-size: 32px;">{{ selectedSubject.icon }}</span></div>
         <h3>{{ selectedSubject.name }}</h3>
         <p>{{ selectedSubject.description }}</p>
         <div class="subject-meta">
-          <span class="badge badge-blue">📚 {{ selectedSubject.lessonCount }} Lessons</span>
+          <span class="badge badge-blue"><span class="material-symbols-rounded" style="font-size: 14px">menu_book</span> {{ selectedSubject.lessonCount }} Lessons</span>
         </div>
         <button class="btn btn-primary btn-sm" (click)="exploreSubject()">
           Explore → 
@@ -26,9 +26,9 @@
 
     <!-- Controls Help -->
     <div class="controls-hint glass-card">
-      <span>🖱️ Drag to rotate</span>
-      <span>🔍 Scroll to zoom</span>
-      <span>👆 Click to select</span>
+      <span><span class="material-symbols-rounded" style="font-size: 14px">mouse</span> Drag to rotate</span>
+      <span><span class="material-symbols-rounded" style="font-size: 14px">search</span> Scroll to zoom</span>
+      <span><span class="material-symbols-rounded" style="font-size: 14px">touch_app</span> Click to select</span>
     </div>
   </div>
 </div>

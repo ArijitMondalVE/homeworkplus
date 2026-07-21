@@ -9,7 +9,7 @@
   <div class="auth-container animate-fade-in">
     <!-- Logo -->
     <div class="auth-logo">
-      <div class="logo-glow">📚</div>
+      <div class="logo-glow"><span class="material-symbols-rounded" style="font-size: 64px">menu_book</span></div>
       <h1>Homework<span>Plus</span></h1>
       <p>AI-powered learning, reimagined</p>
     </div>
@@ -27,7 +27,7 @@
     <!-- Form Card -->
     <div class="auth-card glass-card">
       @if (error()) {
-        <div class="alert-error">⚠️ {{ error() }}</div>
+        <div class="alert-error"><span class="material-symbols-rounded">warning</span> {{ error() }}</div>
       }
 
       @if (mode() === 'login') {
@@ -56,7 +56,7 @@
                 required
               />
               <button type="button" class="eye-btn" (click)="showPassword.set(!showPassword())">
-                {{ showPassword() ? '👁️' : '🙈' }}
+                <span class="material-symbols-rounded">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
               </button>
             </div>
           </div>
@@ -68,7 +68,7 @@
             @if (isLoading()) {
               <span class="spinner"></span> Signing in...
             } @else {
-              🚀 Sign In
+              <span class="material-symbols-rounded">rocket_launch</span> Sign In
             }
           </button>
         </form>
@@ -112,7 +112,7 @@
                 minlength="8"
               />
               <button type="button" class="eye-btn" (click)="showPassword.set(!showPassword())">
-                {{ showPassword() ? '👁️' : '🙈' }}
+                <span class="material-symbols-rounded">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
               </button>
             </div>
           </div>
@@ -120,7 +120,7 @@
             @if (isLoading()) {
               <span class="spinner"></span> Creating account...
             } @else {
-              ✨ Create Account
+              <span class="material-symbols-rounded">auto_awesome</span> Create Account
             }
           </button>
         </form>
@@ -128,9 +128,9 @@
 
       <!-- Features -->
       <div class="auth-features">
-        <div class="feature-item">📷 Photo → Answer</div>
-        <div class="feature-item">🎙️ Voice Tutor</div>
-        <div class="feature-item">🎮 Earn XP & Badges</div>
+        <div class="feature-item"><span class="material-symbols-rounded">photo_camera</span> Photo → Answer</div>
+        <div class="feature-item"><span class="material-symbols-rounded">mic</span> Voice Tutor</div>
+        <div class="feature-item"><span class="material-symbols-rounded">sports_esports</span> Earn XP & Badges</div>
       </div>
     </div>
   </div>

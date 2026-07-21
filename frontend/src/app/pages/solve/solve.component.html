@@ -2,17 +2,17 @@
   <div class="container">
     <!-- Header -->
     <div class="page-header animate-fade-in">
-      <h1>📷 Solve Homework</h1>
+      <h1><span class="material-symbols-rounded" style="font-size: inherit; vertical-align: bottom;">photo_camera</span> Solve Homework</h1>
       <p>Upload a photo or type your question — our AI will solve it step by step</p>
     </div>
 
     <!-- Input Mode Toggle -->
     <div class="mode-toggle animate-fade-in">
       <button class="mode-btn" [class.active]="inputMode() === 'photo'" (click)="inputMode.set('photo')">
-        📷 Photo Upload
+        <span class="material-symbols-rounded" style="font-size: 20px; vertical-align: text-bottom;">photo_camera</span> Photo Upload
       </button>
       <button class="mode-btn" [class.active]="inputMode() === 'text'" (click)="inputMode.set('text')">
-        ✍️ Type Question
+        <span class="material-symbols-rounded" style="font-size: 20px; vertical-align: text-bottom;">draw</span> Type Question
       </button>
     </div>
 
@@ -44,7 +44,7 @@
               </div>
             } @else {
               <div class="drop-content">
-                <div class="drop-icon">📤</div>
+                <div class="drop-icon"><span class="material-symbols-rounded" style="font-size: 48px;">upload</span></div>
                 <h3>Drop your homework photo here</h3>
                 <p>or click to browse files</p>
                 <span class="drop-hint">Supports JPG, PNG, WebP (max 10MB)</span>
@@ -81,7 +81,7 @@
             @if (isSolving()) {
               <span class="spinner"></span> AI is thinking...
             } @else {
-              🤖 Solve with AI
+              <span class="material-symbols-rounded">smart_toy</span> Solve with AI
             }
           </button>
 
@@ -105,14 +105,14 @@
               @if (isSolving()) {
                 <span class="spinner"></span> AI is thinking...
               } @else {
-                🤖 Get Answer
+                <span class="material-symbols-rounded">smart_toy</span> Get Answer
               }
             </button>
           </div>
         }
 
         @if (error()) {
-          <div class="alert-error">⚠️ {{ error() }}</div>
+          <div class="alert-error"><span class="material-symbols-rounded">warning</span> {{ error() }}</div>
         }
       </div>
 
@@ -122,33 +122,33 @@
           <div class="answer-card glass-card">
             <!-- Pipeline Status -->
             <div class="pipeline-status">
-              <span class="status-chip">✅ Answer Generated</span>
+              <span class="status-chip"><span class="material-symbols-rounded" style="font-size: 14px">check_circle</span> Answer Generated</span>
               @if (answer()?.confidence) {
                 <span class="confidence-chip">
-                  🎯 {{ (answer()!.confidence! * 100).toFixed(0) }}% confident
+                  <span class="material-symbols-rounded" style="font-size: 14px">crisis_alert</span> {{ (answer()!.confidence! * 100).toFixed(0) }}% confident
                 </span>
               }
               @if (answer()?.processing_time_ms) {
-                <span class="time-chip">⚡ {{ answer()?.processing_time_ms }}ms</span>
+                <span class="time-chip"><span class="material-symbols-rounded" style="font-size: 14px">bolt</span> {{ answer()?.processing_time_ms }}ms</span>
               }
             </div>
 
             <!-- Question -->
             <div class="answer-section">
-              <h3>📝 Question Detected</h3>
+              <h3><span class="material-symbols-rounded">edit_document</span> Question Detected</h3>
               <p class="question-text">{{ answer()?.question_text }}</p>
             </div>
 
             <!-- Main Answer -->
             <div class="answer-section">
-              <h3>💡 Answer</h3>
+              <h3><span class="material-symbols-rounded">lightbulb</span> Answer</h3>
               <div class="answer-content">{{ answer()?.answer_text }}</div>
             </div>
 
             <!-- LaTeX -->
             @if (answer()?.latex) {
               <div class="answer-section">
-                <h3>📐 Mathematical Expression</h3>
+                <h3><span class="material-symbols-rounded">architecture</span> Mathematical Expression</h3>
                 <div class="math-block">{{ answer()?.latex }}</div>
               </div>
             }
@@ -156,7 +156,7 @@
             <!-- Step by Step -->
             @if (answer()?.steps?.length) {
               <div class="answer-section">
-                <h3>🪜 Step-by-Step Solution</h3>
+                <h3><span class="material-symbols-rounded">format_list_numbered</span> Step-by-Step Solution</h3>
                 <ol class="steps-list">
                   @for (step of answer()?.steps; track $index) {
                     <li class="step-item">{{ step }}</li>
@@ -168,7 +168,7 @@
             <!-- Hints -->
             @if (answer()?.hints?.length) {
               <div class="answer-section hints-section">
-                <h3>💭 Hints</h3>
+                <h3><span class="material-symbols-rounded">chat_bubble</span> Hints</h3>
                 <ul class="hints-list">
                   @for (hint of answer()?.hints; track $index) {
                     <li>{{ hint }}</li>
@@ -180,7 +180,7 @@
             <!-- Voice -->
             @if (answer()?.voice_url) {
               <div class="answer-section">
-                <h3>🔊 Voice Explanation</h3>
+                <h3><span class="material-symbols-rounded">volume_up</span> Voice Explanation</h3>
                 <audio controls class="audio-player" [src]="answer()?.voice_url"></audio>
               </div>
             }
@@ -188,10 +188,10 @@
             <!-- RAG Sources -->
             @if (answer()?.rag_sources?.length) {
               <div class="answer-section">
-                <h3>📚 Sources</h3>
+                <h3><span class="material-symbols-rounded">menu_book</span> Sources</h3>
                 <div class="sources-list">
                   @for (src of answer()?.rag_sources?.slice(0, 3); track $index) {
-                    <div class="source-chip">📖 {{ src.title ?? 'Textbook' }}</div>
+                    <div class="source-chip"><span class="material-symbols-rounded" style="font-size: 14px">import_contacts</span> {{ src.title ?? 'Textbook' }}</div>
                   }
                 </div>
               </div>
@@ -202,29 +202,29 @@
               <div class="feedback-section">
                 <p>Was this helpful?</p>
                 <div class="feedback-actions">
-                  <button class="btn btn-secondary btn-sm" (click)="submitFeedback(true, 5)">👍 Yes</button>
-                  <button class="btn btn-secondary btn-sm" (click)="submitFeedback(false, 2)">👎 No</button>
+                  <button class="btn btn-secondary btn-sm" (click)="submitFeedback(true, 5)"><span class="material-symbols-rounded" style="font-size: 16px">thumb_up</span> Yes</button>
+                  <button class="btn btn-secondary btn-sm" (click)="submitFeedback(false, 2)"><span class="material-symbols-rounded" style="font-size: 16px">thumb_down</span> No</button>
                 </div>
               </div>
             } @else {
-              <div class="feedback-done">✅ Thanks for your feedback!</div>
+              <div class="feedback-done"><span class="material-symbols-rounded">check_circle</span> Thanks for your feedback!</div>
             }
           </div>
         } @else if (!isSolving()) {
           <!-- Empty State -->
           <div class="empty-answer glass-card">
             <div class="empty-visual">
-              <div class="empty-icon animate-float">🤖</div>
+              <div class="empty-icon animate-float"><span class="material-symbols-rounded" style="font-size: 48px">smart_toy</span></div>
               <div class="pipeline-steps">
-                <div class="pip-step">📤 Upload</div>
+                <div class="pip-step"><span class="material-symbols-rounded" style="font-size: 16px">upload</span> Upload</div>
                 <div class="pip-arrow">→</div>
-                <div class="pip-step">👁️ Vision</div>
+                <div class="pip-step"><span class="material-symbols-rounded" style="font-size: 16px">visibility</span> Vision</div>
                 <div class="pip-arrow">→</div>
-                <div class="pip-step">📝 OCR</div>
+                <div class="pip-step"><span class="material-symbols-rounded" style="font-size: 16px">edit_document</span> OCR</div>
                 <div class="pip-arrow">→</div>
-                <div class="pip-step">🧮 Math</div>
+                <div class="pip-step"><span class="material-symbols-rounded" style="font-size: 16px">calculate</span> Math</div>
                 <div class="pip-arrow">→</div>
-                <div class="pip-step">💡 Answer</div>
+                <div class="pip-step"><span class="material-symbols-rounded" style="font-size: 16px">lightbulb</span> Answer</div>
               </div>
             </div>
             <h3>Your AI answer will appear here</h3>
@@ -235,13 +235,18 @@
           <div class="processing-card glass-card">
             <div class="processing-animation">
               <div class="pulse-ring"></div>
-              <div class="processor-icon">🤖</div>
+              <div class="processor-icon"><span class="material-symbols-rounded" style="font-size: 48px">smart_toy</span></div>
             </div>
             <h3>AI Pipeline Running...</h3>
             <div class="pipeline-progress">
               @for (step of pipelineSteps; track step.label) {
                 <div class="pip-step-row" [class.done]="step.done" [class.active]="step.active">
-                  <span class="pip-check">{{ step.done ? '✅' : step.active ? '⏳' : '⬜' }}</span>
+                  <span class="pip-check">
+                    <span class="material-symbols-rounded" style="font-size: 20px;">
+                      {{ step.done ? 'check_circle' : step.active ? 'hourglass_empty' : 'check_box_outline_blank' }}
+                    </span>
+                  </span>
+                  <span class="material-symbols-rounded" style="font-size: 16px; margin: 0 8px;">{{ step.icon }}</span>
                   <span>{{ step.label }}</span>
                 </div>
               }

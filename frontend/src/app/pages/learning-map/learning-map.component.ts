@@ -33,14 +33,14 @@ export class LearningMapComponent implements AfterViewInit, OnDestroy {
   private sphereGroup: any = null;
 
   subjects: SubjectNode[] = [
-    { id: 'math', name: 'Mathematics', icon: '🔢', color: '#7c3aed', x: 0, y: 0, z: 0, description: 'Algebra, Calculus, Statistics, Geometry', lessonCount: 48 },
-    { id: 'physics', name: 'Physics', icon: '⚡', color: '#3b82f6', x: 200, y: 50, z: -100, description: 'Mechanics, Electromagnetism, Thermodynamics', lessonCount: 36 },
-    { id: 'chemistry', name: 'Chemistry', icon: '🧪', color: '#10b981', x: -180, y: -60, z: 50, description: 'Organic, Inorganic, Physical Chemistry', lessonCount: 42 },
-    { id: 'biology', name: 'Biology', icon: '🧬', color: '#06b6d4', x: 100, y: -150, z: 80, description: 'Cell Biology, Genetics, Ecology', lessonCount: 40 },
-    { id: 'history', name: 'History', icon: '📜', color: '#f59e0b', x: -220, y: 100, z: -80, description: 'World History, Ancient Civilizations', lessonCount: 30 },
-    { id: 'literature', name: 'Literature', icon: '📖', color: '#ec4899', x: 150, y: 200, z: 50, description: 'Poetry, Fiction, Analysis, Writing', lessonCount: 25 },
-    { id: 'geography', name: 'Geography', icon: '🌍', color: '#f97316', x: -100, y: 180, z: -120, description: 'Physical, Human, Environmental Geography', lessonCount: 28 },
-    { id: 'computer-science', name: 'Computer Science', icon: '💻', color: '#8b5cf6', x: 0, y: -200, z: -50, description: 'Algorithms, Data Structures, AI', lessonCount: 55 },
+    { id: 'math', name: 'Mathematics', icon: 'calculate', color: '#7c3aed', x: 0, y: 0, z: 0, description: 'Algebra, Calculus, Statistics, Geometry', lessonCount: 48 },
+    { id: 'physics', name: 'Physics', icon: 'bolt', color: '#3b82f6', x: 200, y: 50, z: -100, description: 'Mechanics, Electromagnetism, Thermodynamics', lessonCount: 36 },
+    { id: 'chemistry', name: 'Chemistry', icon: 'science', color: '#10b981', x: -180, y: -60, z: 50, description: 'Organic, Inorganic, Physical Chemistry', lessonCount: 42 },
+    { id: 'biology', name: 'Biology', icon: 'biotech', color: '#06b6d4', x: 100, y: -150, z: 80, description: 'Cell Biology, Genetics, Ecology', lessonCount: 40 },
+    { id: 'history', name: 'History', icon: 'history_edu', color: '#f59e0b', x: -220, y: 100, z: -80, description: 'World History, Ancient Civilizations', lessonCount: 30 },
+    { id: 'literature', name: 'Literature', icon: 'menu_book', color: '#ec4899', x: 150, y: 200, z: 50, description: 'Poetry, Fiction, Analysis, Writing', lessonCount: 25 },
+    { id: 'geography', name: 'Geography', icon: 'public', color: '#f97316', x: -100, y: 180, z: -120, description: 'Physical, Human, Environmental Geography', lessonCount: 28 },
+    { id: 'computer-science', name: 'Computer Science', icon: 'computer', color: '#8b5cf6', x: 0, y: -200, z: -50, description: 'Algorithms, Data Structures, AI', lessonCount: 55 },
   ];
 
   async ngAfterViewInit(): Promise<void> {

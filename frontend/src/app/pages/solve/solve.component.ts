@@ -29,11 +29,11 @@ export class SolveComponent {
   imageId: string | null = null;
 
   pipelineSteps = [
-    { label: '👁️ Vision Enhancement', done: false, active: false },
-    { label: '📝 OCR Extraction', done: false, active: false },
-    { label: '🧮 Math Analysis', done: false, active: false },
-    { label: '📚 RAG Knowledge Search', done: false, active: false },
-    { label: '🤖 LLM Answer Generation', done: false, active: false },
+    { label: 'Vision Enhancement', icon: 'visibility', done: false, active: false },
+    { label: 'OCR Extraction', icon: 'edit_document', done: false, active: false },
+    { label: 'Math Analysis', icon: 'calculate', done: false, active: false },
+    { label: 'RAG Knowledge Search', icon: 'menu_book', done: false, active: false },
+    { label: 'LLM Answer Generation', icon: 'smart_toy', done: false, active: false },
   ];
 
   onDragOver(e: DragEvent): void {

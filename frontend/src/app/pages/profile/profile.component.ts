@@ -15,14 +15,14 @@ export class ProfileComponent implements OnInit {
   private aiService = inject(AiService);
 
   badges = [
-    { name: 'First Steps', icon: '🎯', xp: 50, earned: true, rare: false },
-    { name: 'Quick Learner', icon: '⚡', xp: 100, earned: true, rare: false },
-    { name: 'Problem Solver', icon: '🧮', xp: 200, earned: false, rare: false },
-    { name: 'Math Wizard', icon: '🔮', xp: 250, earned: false, rare: true },
-    { name: 'On Fire', icon: '🔥', xp: 150, earned: false, rare: false },
-    { name: 'Scholar', icon: '📚', xp: 200, earned: false, rare: false },
-    { name: 'Voice Champ', icon: '🎙️', xp: 100, earned: false, rare: false },
-    { name: 'Centurion', icon: '💯', xp: 500, earned: false, rare: true },
+    { name: 'First Steps', icon: 'crisis_alert', xp: 50, earned: true, rare: false },
+    { name: 'Quick Learner', icon: 'bolt', xp: 100, earned: true, rare: false },
+    { name: 'Problem Solver', icon: 'calculate', xp: 200, earned: false, rare: false },
+    { name: 'Math Wizard', icon: 'auto_awesome', xp: 250, earned: false, rare: true },
+    { name: 'On Fire', icon: 'local_fire_department', xp: 150, earned: false, rare: false },
+    { name: 'Scholar', icon: 'menu_book', xp: 200, earned: false, rare: false },
+    { name: 'Voice Champ', icon: 'mic', xp: 100, earned: false, rare: false },
+    { name: 'Centurion', icon: 'workspace_premium', xp: 500, earned: false, rare: true },
   ];
 
   activityDays = this.generateActivityDays();

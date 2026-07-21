@@ -6,23 +6,24 @@
 
 ## 🏗️ Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Angular 19, Angular Material, TailwindCSS, Three.js, Fabric.js |
-| **Backend** | FastAPI, Python 3.12, SQLAlchemy Async |
-| **Database** | NeonDB (PostgreSQL Serverless) |
-| **Vector DB** | ChromaDB (RAG Knowledge Base) |
-| **Cache/Queue** | Redis + Celery |
-| **AI/LLM** | GPT-4o, Claude Sonnet, LangChain, LangGraph |
-| **OCR** | EasyOCR + PaddleOCR |
-| **Vision** | OpenCV |
-| **Voice** | OpenAI Whisper STT + TTS |
+| Layer           | Technology                                                     |
+| --------------- | -------------------------------------------------------------- |
+| **Frontend**    | Angular 19, Angular Material, TailwindCSS, Three.js, Fabric.js |
+| **Backend**     | FastAPI, Python 3.12, SQLAlchemy Async                         |
+| **Database**    | NeonDB (PostgreSQL Serverless)                                 |
+| **Vector DB**   | ChromaDB (RAG Knowledge Base)                                  |
+| **Cache/Queue** | Redis + Celery                                                 |
+| **AI/LLM**      | GPT-4o, Claude Sonnet, LangChain, LangGraph                    |
+| **OCR**         | EasyOCR + PaddleOCR                                            |
+| **Vision**      | OpenCV                                                         |
+| **Voice**       | OpenAI Whisper STT + TTS                                       |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Python 3.12+
 - Node.js 18+
 - Docker Desktop
@@ -51,6 +52,7 @@ docker-compose logs -f backend
 ```
 
 Services:
+
 - **Frontend**: http://localhost:4200
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
@@ -79,7 +81,7 @@ celery -A app.workers.celery_app worker --loglevel=info
 ```bash
 cd frontend
 npm install
-npm run dev  # or: ng serve
+npm run dev  # or: ng serve or: npm start
 # → http://localhost:4200
 ```
 
@@ -165,20 +167,20 @@ TTS Voice Output (VoiceAgent)
 
 ## 📡 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register new user |
-| POST | `/api/v1/auth/login` | Login → JWT tokens |
-| POST | `/api/v1/auth/refresh` | Refresh access token |
-| GET | `/api/v1/auth/me` | Current user profile |
-| POST | `/api/v1/ai/upload-image` | Upload homework image |
-| POST | `/api/v1/ai/solve` | Run Photo-to-Answer pipeline |
-| POST | `/api/v1/ai/ask` | Text question → AI answer |
-| POST | `/api/v1/ai/chat` | Multi-turn AI chat |
-| GET | `/api/v1/dashboard/stats` | User dashboard data |
-| GET | `/api/v1/dashboard/leaderboard` | XP leaderboard |
-| WS | `/ws/whiteboard/{room_id}` | Collaborative whiteboard |
-| WS | `/ws/chat/{session_id}` | Real-time chat |
+| Method | Endpoint                        | Description                  |
+| ------ | ------------------------------- | ---------------------------- |
+| POST   | `/api/v1/auth/register`         | Register new user            |
+| POST   | `/api/v1/auth/login`            | Login → JWT tokens           |
+| POST   | `/api/v1/auth/refresh`          | Refresh access token         |
+| GET    | `/api/v1/auth/me`               | Current user profile         |
+| POST   | `/api/v1/ai/upload-image`       | Upload homework image        |
+| POST   | `/api/v1/ai/solve`              | Run Photo-to-Answer pipeline |
+| POST   | `/api/v1/ai/ask`                | Text question → AI answer    |
+| POST   | `/api/v1/ai/chat`               | Multi-turn AI chat           |
+| GET    | `/api/v1/dashboard/stats`       | User dashboard data          |
+| GET    | `/api/v1/dashboard/leaderboard` | XP leaderboard               |
+| WS     | `/ws/whiteboard/{room_id}`      | Collaborative whiteboard     |
+| WS     | `/ws/chat/{session_id}`         | Real-time chat               |
 
 ---
 

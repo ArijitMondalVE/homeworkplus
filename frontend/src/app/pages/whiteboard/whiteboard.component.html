@@ -3,21 +3,21 @@
   <div class="wb-toolbar glass-card">
     <!-- Tools -->
     <div class="tool-group">
-      <button class="tool-btn" [class.active]="activeTool === 'select'" (click)="setTool('select')" data-tooltip="Select">🖱️</button>
-      <button class="tool-btn" [class.active]="activeTool === 'pen'" (click)="setTool('pen')" data-tooltip="Pen">✏️</button>
-      <button class="tool-btn" [class.active]="activeTool === 'highlighter'" (class.active)="activeTool === 'highlighter'" (click)="setTool('highlighter')" data-tooltip="Highlight">🖊️</button>
-      <button class="tool-btn" [class.active]="activeTool === 'eraser'" (click)="setTool('eraser')" data-tooltip="Eraser">🧹</button>
-      <button class="tool-btn" [class.active]="activeTool === 'text'" (click)="setTool('text')" data-tooltip="Text">T</button>
+      <button class="tool-btn" [class.active]="activeTool === 'select'" (click)="setTool('select')" data-tooltip="Select"><span class="material-symbols-rounded">mouse</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'pen'" (click)="setTool('pen')" data-tooltip="Pen"><span class="material-symbols-rounded">edit</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'highlighter'" (click)="setTool('highlighter')" data-tooltip="Highlight"><span class="material-symbols-rounded">ink_highlighter</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'eraser'" (click)="setTool('eraser')" data-tooltip="Eraser"><span class="material-symbols-rounded">ink_eraser</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'text'" (click)="setTool('text')" data-tooltip="Text"><span class="material-symbols-rounded">title</span></button>
     </div>
 
     <div class="separator"></div>
 
     <!-- Shapes -->
     <div class="tool-group">
-      <button class="tool-btn" (click)="addShape('rect')" data-tooltip="Rectangle">▭</button>
-      <button class="tool-btn" (click)="addShape('circle')" data-tooltip="Circle">○</button>
-      <button class="tool-btn" (click)="addShape('line')" data-tooltip="Line">╱</button>
-      <button class="tool-btn" (click)="addShape('arrow')" data-tooltip="Arrow">→</button>
+      <button class="tool-btn" (click)="addShape('rect')" data-tooltip="Rectangle"><span class="material-symbols-rounded">rectangle</span></button>
+      <button class="tool-btn" (click)="addShape('circle')" data-tooltip="Circle"><span class="material-symbols-rounded">circle</span></button>
+      <button class="tool-btn" (click)="addShape('line')" data-tooltip="Line"><span class="material-symbols-rounded">horizontal_rule</span></button>
+      <button class="tool-btn" (click)="addShape('arrow')" data-tooltip="Arrow"><span class="material-symbols-rounded">arrow_right_alt</span></button>
     </div>
 
     <div class="separator"></div>
@@ -48,10 +48,10 @@
 
     <!-- Actions -->
     <div class="tool-group">
-      <button class="tool-btn" (click)="undo()" data-tooltip="Undo">↩</button>
-      <button class="tool-btn" (click)="redo()" data-tooltip="Redo">↪</button>
-      <button class="tool-btn" (click)="clearCanvas()" data-tooltip="Clear">🗑️</button>
-      <button class="tool-btn" (click)="saveCanvas()" data-tooltip="Save PNG">💾</button>
+      <button class="tool-btn" (click)="undo()" data-tooltip="Undo"><span class="material-symbols-rounded">undo</span></button>
+      <button class="tool-btn" (click)="redo()" data-tooltip="Redo"><span class="material-symbols-rounded">redo</span></button>
+      <button class="tool-btn" (click)="clearCanvas()" data-tooltip="Clear"><span class="material-symbols-rounded">delete</span></button>
+      <button class="tool-btn" (click)="saveCanvas()" data-tooltip="Save PNG"><span class="material-symbols-rounded">save</span></button>
     </div>
   </div>
 

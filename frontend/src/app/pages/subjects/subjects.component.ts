@@ -29,7 +29,7 @@ export class SubjectsComponent {
     {
       id: 'mathematics',
       name: 'Mathematics',
-      icon: '🔢',
+      icon: 'calculate',
       color: '#7c3aed',
       description: 'From basic arithmetic to advanced calculus and statistics',
       topics: ['Algebra', 'Calculus', 'Statistics', 'Geometry', 'Trigonometry', 'Linear Algebra'],
@@ -39,7 +39,7 @@ export class SubjectsComponent {
     {
       id: 'physics',
       name: 'Physics',
-      icon: '⚡',
+      icon: 'bolt',
       color: '#3b82f6',
       description: 'Laws of nature: mechanics, waves, electricity, and quantum physics',
       topics: ['Mechanics', 'Electromagnetism', 'Thermodynamics', 'Optics', 'Quantum'],
@@ -49,7 +49,7 @@ export class SubjectsComponent {
     {
       id: 'chemistry',
       name: 'Chemistry',
-      icon: '🧪',
+      icon: 'science',
       color: '#10b981',
       description: 'Elements, reactions, molecular structures, and chemical processes',
       topics: ['Organic Chemistry', 'Inorganic', 'Physical Chemistry', 'Electrochemistry'],
@@ -59,7 +59,7 @@ export class SubjectsComponent {
     {
       id: 'biology',
       name: 'Biology',
-      icon: '🧬',
+      icon: 'biotech',
       color: '#06b6d4',
       description: 'The study of life: from cells to ecosystems',
       topics: ['Cell Biology', 'Genetics', 'Evolution', 'Ecology', 'Human Biology'],
@@ -69,7 +69,7 @@ export class SubjectsComponent {
     {
       id: 'history',
       name: 'History',
-      icon: '📜',
+      icon: 'history_edu',
       color: '#f59e0b',
       description: 'World history from ancient civilizations to modern times',
       topics: ['Ancient World', 'Middle Ages', 'Modern History', 'World Wars', 'Cold War'],
@@ -79,7 +79,7 @@ export class SubjectsComponent {
     {
       id: 'geography',
       name: 'Geography',
-      icon: '🌍',
+      icon: 'public',
       color: '#f97316',
       description: 'Physical and human geography, maps, and environmental systems',
       topics: ['Physical Geography', 'Human Geography', 'Cartography', 'Climate'],
@@ -89,7 +89,7 @@ export class SubjectsComponent {
     {
       id: 'computer-science',
       name: 'Computer Science',
-      icon: '💻',
+      icon: 'computer',
       color: '#8b5cf6',
       description: 'Programming, algorithms, data structures, and AI',
       topics: ['Python', 'Data Structures', 'Algorithms', 'AI & ML', 'Databases', 'Web Dev'],
@@ -99,7 +99,7 @@ export class SubjectsComponent {
     {
       id: 'literature',
       name: 'Literature',
-      icon: '📖',
+      icon: 'menu_book',
       color: '#ec4899',
       description: 'Poetry, prose, analysis, and creative writing',
       topics: ['Poetry Analysis', 'Fiction', 'Shakespeare', 'Essay Writing', 'Drama'],
@@ -109,7 +109,7 @@ export class SubjectsComponent {
     {
       id: 'economics',
       name: 'Economics',
-      icon: '💹',
+      icon: 'trending_up',
       color: '#14b8a6',
       description: 'Micro and macroeconomics, markets, and financial systems',
       topics: ['Microeconomics', 'Macroeconomics', 'Trade', 'Finance', 'Behavioral Economics'],

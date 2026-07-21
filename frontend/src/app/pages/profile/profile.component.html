@@ -18,21 +18,21 @@
           <h1>{{ auth.currentUser()?.full_name }}</h1>
           <p class="username">&#64;{{ auth.currentUser()?.username }}</p>
           @if (auth.currentUser()?.grade_level) {
-            <span class="badge badge-blue">🎓 {{ auth.currentUser()?.grade_level }}</span>
+            <span class="badge badge-blue"><span class="material-symbols-rounded" style="font-size: 14px">school</span> {{ auth.currentUser()?.grade_level }}</span>
           }
         </div>
 
         <div class="profile-stats">
           <div class="hero-stat">
-            <span class="hero-stat-value">⚡ {{ auth.currentUser()?.xp_points | number }}</span>
+            <span class="hero-stat-value"><span class="material-symbols-rounded" style="font-size: 20px; vertical-align: text-bottom;">bolt</span> {{ auth.currentUser()?.xp_points | number }}</span>
             <span class="hero-stat-label">Total XP</span>
           </div>
           <div class="hero-stat">
-            <span class="hero-stat-value">🔥 {{ auth.currentUser()?.streak_days }}</span>
+            <span class="hero-stat-value"><span class="material-symbols-rounded" style="font-size: 20px; vertical-align: text-bottom;">local_fire_department</span> {{ auth.currentUser()?.streak_days }}</span>
             <span class="hero-stat-label">Day Streak</span>
           </div>
           <div class="hero-stat">
-            <span class="hero-stat-value">✅ {{ auth.currentUser()?.total_questions_solved | number }}</span>
+            <span class="hero-stat-value"><span class="material-symbols-rounded" style="font-size: 20px; vertical-align: text-bottom;">check_circle</span> {{ auth.currentUser()?.total_questions_solved | number }}</span>
             <span class="hero-stat-label">Solved</span>
           </div>
         </div>
@@ -56,15 +56,15 @@
 
       <!-- Badges / Achievements -->
       <div class="achievements-panel glass-card animate-fade-in">
-        <h3>🏆 Achievements</h3>
+        <h3><span class="material-symbols-rounded">emoji_events</span> Achievements</h3>
         <div class="badges-grid">
           @for (badge of badges; track badge.name) {
             <div class="badge-card" [class.earned]="badge.earned" [class.rare]="badge.rare">
-              <div class="badge-icon">{{ badge.icon }}</div>
+              <div class="badge-icon"><span class="material-symbols-rounded" style="font-size: 32px">{{ badge.icon }}</span></div>
               <div class="badge-name">{{ badge.name }}</div>
               <div class="badge-xp">+{{ badge.xp }} XP</div>
               @if (!badge.earned) {
-                <div class="badge-lock">🔒</div>
+                <div class="badge-lock"><span class="material-symbols-rounded" style="font-size: 24px">lock</span></div>
               }
             </div>
           }
@@ -73,7 +73,7 @@
 
       <!-- Activity Timeline -->
       <div class="activity-panel glass-card animate-fade-in">
-        <h3>📊 Activity Overview</h3>
+        <h3><span class="material-symbols-rounded">bar_chart</span> Activity Overview</h3>
         <div class="activity-chart">
           @for (day of activityDays; track day.label) {
             <div class="activity-col" [title]="day.label + ': ' + day.count + ' questions'">
@@ -85,11 +85,11 @@
 
         <div class="activity-stats">
           <div class="act-stat">
-            <span class="act-value">📚 {{ auth.currentUser()?.total_study_minutes ?? 0 | number }}</span>
+            <span class="act-value"><span class="material-symbols-rounded" style="font-size: 20px; vertical-align: text-bottom;">menu_book</span> {{ auth.currentUser()?.total_study_minutes ?? 0 | number }}</span>
             <span class="act-label">Study Minutes</span>
           </div>
           <div class="act-stat">
-            <span class="act-value">🌐 {{ auth.currentUser()?.preferred_language?.toUpperCase() }}</span>
+            <span class="act-value"><span class="material-symbols-rounded" style="font-size: 20px; vertical-align: text-bottom;">language</span> {{ auth.currentUser()?.preferred_language?.toUpperCase() }}</span>
             <span class="act-label">Language</span>
           </div>
         </div>

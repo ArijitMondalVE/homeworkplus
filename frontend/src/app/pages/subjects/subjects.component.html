@@ -2,13 +2,13 @@
   <div class="container">
     <!-- Header -->
     <div class="page-header animate-fade-in">
-      <h1>📖 Subjects</h1>
+      <h1><span class="material-symbols-rounded" style="font-size: inherit; vertical-align: bottom;">menu_book</span> Subjects</h1>
       <p>Browse all subjects and start solving homework</p>
     </div>
 
     <!-- Search + Filter -->
     <div class="search-bar glass-card animate-fade-in">
-      <span class="search-icon">🔍</span>
+      <span class="search-icon material-symbols-rounded">search</span>
       <input
         type="text"
         class="search-input"
@@ -29,7 +29,7 @@
       @for (subject of filteredSubjects(); track subject.id) {
         <div class="subject-card" [style.--accent]="subject.color">
           <div class="card-header">
-            <div class="subject-icon">{{ subject.icon }}</div>
+            <div class="subject-icon"><span class="material-symbols-rounded" style="font-size: 32px;">{{ subject.icon }}</span></div>
             <div class="diff-badge">{{ subject.difficulty }}</div>
           </div>
 
@@ -46,7 +46,7 @@
           </div>
 
           <div class="card-footer">
-            <span class="q-count">📝 {{ subject.questionCount }} questions</span>
+            <span class="q-count"><span class="material-symbols-rounded" style="font-size: 16px; vertical-align: text-bottom;">edit_document</span> {{ subject.questionCount }} questions</span>
             <a routerLink="/solve" class="btn btn-primary btn-sm">Solve →</a>
           </div>
         </div>

@@ -4,18 +4,18 @@
     <!-- Header -->
     <div class="dash-header animate-fade-in">
       <div class="greeting">
-        <h1>Good {{ timeOfDay() }}, {{ firstName() }} 👋</h1>
+        <h1>Good {{ timeOfDay() }}, {{ firstName() }} <span class="material-symbols-rounded" style="font-size: inherit;">waving_hand</span></h1>
         <p>Ready to tackle some homework today?</p>
       </div>
       <a routerLink="/solve" class="btn btn-primary btn-lg">
-        📷 Solve Homework
+        <span class="material-symbols-rounded">photo_camera</span> Solve Homework
       </a>
     </div>
 
     <!-- Stats Grid -->
     <div class="stats-grid animate-fade-in">
       <div class="stat-card xp-card">
-        <div class="stat-icon">⚡</div>
+        <div class="stat-icon"><span class="material-symbols-rounded">bolt</span></div>
         <div class="stat-info">
           <div class="stat-value">{{ stats()?.user?.xp_points | number }}</div>
           <div class="stat-label">Total XP</div>
@@ -27,7 +27,7 @@
       </div>
 
       <div class="stat-card level-card">
-        <div class="stat-icon">🏆</div>
+        <div class="stat-icon"><span class="material-symbols-rounded">emoji_events</span></div>
         <div class="stat-info">
           <div class="stat-value">Level {{ stats()?.user?.level }}</div>
           <div class="stat-label">Current Level</div>
@@ -35,7 +35,7 @@
       </div>
 
       <div class="stat-card streak-card">
-        <div class="stat-icon">🔥</div>
+        <div class="stat-icon"><span class="material-symbols-rounded">local_fire_department</span></div>
         <div class="stat-info">
           <div class="stat-value">{{ stats()?.user?.streak_days }} days</div>
           <div class="stat-label">Study Streak</div>
@@ -43,7 +43,7 @@
       </div>
 
       <div class="stat-card questions-card">
-        <div class="stat-icon">✅</div>
+        <div class="stat-icon"><span class="material-symbols-rounded">check_circle</span></div>
         <div class="stat-info">
           <div class="stat-value">{{ stats()?.stats?.total_questions_solved | number }}</div>
           <div class="stat-label">Questions Solved</div>
@@ -56,25 +56,25 @@
 
       <!-- Quick Actions -->
       <div class="quick-actions glass-card animate-fade-in">
-        <h3>⚡ Quick Actions</h3>
+        <h3><span class="material-symbols-rounded">bolt</span> Quick Actions</h3>
         <div class="action-buttons">
           <a routerLink="/solve" class="action-btn">
-            <span class="action-icon">📷</span>
+            <span class="action-icon material-symbols-rounded">photo_camera</span>
             <span class="action-label">Scan & Solve</span>
             <span class="action-desc">Upload a photo</span>
           </a>
           <a routerLink="/voice" class="action-btn">
-            <span class="action-icon">🎙️</span>
+            <span class="action-icon material-symbols-rounded">mic</span>
             <span class="action-label">Voice Tutor</span>
             <span class="action-desc">Ask out loud</span>
           </a>
           <a routerLink="/whiteboard" class="action-btn">
-            <span class="action-icon">✏️</span>
+            <span class="action-icon material-symbols-rounded">edit</span>
             <span class="action-label">Whiteboard</span>
             <span class="action-desc">Draw & collaborate</span>
           </a>
           <a routerLink="/map" class="action-btn">
-            <span class="action-icon">🌌</span>
+            <span class="action-icon material-symbols-rounded">explore</span>
             <span class="action-label">3D Map</span>
             <span class="action-desc">Explore subjects</span>
           </a>
@@ -84,7 +84,7 @@
       <!-- Recent Questions -->
       <div class="recent-questions glass-card animate-fade-in">
         <div class="section-header">
-          <h3>📝 Recent Activity</h3>
+          <h3><span class="material-symbols-rounded">history</span> Recent Activity</h3>
           <a routerLink="/solve" class="btn btn-ghost btn-sm">View All</a>
         </div>
         @if (isLoading()) {
@@ -97,13 +97,13 @@
             @for (q of stats()?.recent_questions; track q.id) {
               <div class="question-item">
                 <div class="q-type-badge" [class]="'badge badge-' + getTypeColor(q.question_type)">
-                  {{ getTypeIcon(q.question_type) }} {{ q.question_type }}
+                  <span class="material-symbols-rounded" style="font-size: 14px">{{ getTypeIcon(q.question_type) }}</span> {{ q.question_type }}
                 </div>
                 <p class="q-content">{{ q.content }}</p>
                 <div class="q-meta">
                   <span class="q-date">{{ q.created_at | date:'MMM d, h:mm a' }}</span>
                   @if (q.is_solved) {
-                    <span class="q-solved">✅ Solved</span>
+                    <span class="q-solved"><span class="material-symbols-rounded" style="font-size: 14px">check_circle</span> Solved</span>
                   }
                 </div>
               </div>
@@ -111,7 +111,7 @@
           </div>
         } @else {
           <div class="empty-state">
-            <div class="empty-icon">📚</div>
+            <div class="empty-icon"><span class="material-symbols-rounded" style="font-size: 48px">menu_book</span></div>
             <p>No questions yet! Start by uploading a homework photo.</p>
             <a routerLink="/solve" class="btn btn-primary btn-sm">Get Started</a>
           </div>
@@ -121,18 +121,24 @@
       <!-- Leaderboard Preview -->
       <div class="leaderboard glass-card animate-fade-in">
         <div class="section-header">
-          <h3>🏅 Leaderboard</h3>
+          <h3><span class="material-symbols-rounded">military_tech</span> Leaderboard</h3>
           <span class="badge badge-purple">Weekly</span>
         </div>
         @if (leaderboard().length) {
           <div class="leaderboard-list">
             @for (entry of leaderboard().slice(0, 5); track entry.user_id; let i = $index) {
               <div class="lb-item" [class.me]="entry.is_current_user">
-                <span class="lb-rank">{{ getRankEmoji(i + 1) }}</span>
+                <span class="lb-rank">
+                  @if (i < 3) {
+                    <span class="material-symbols-rounded" style="font-size: 20px; color: gold;">{{ getRankIcon(i + 1) }}</span>
+                  } @else {
+                    #{{ i + 1 }}
+                  }
+                </span>
                 <div class="lb-avatar">{{ entry.username?.[0]?.toUpperCase() }}</div>
                 <div class="lb-info">
                   <span class="lb-name">{{ entry.full_name }}</span>
-                  <span class="lb-xp">⚡ {{ entry.xp_points | number }} XP</span>
+                  <span class="lb-xp"><span class="material-symbols-rounded" style="font-size: 14px">bolt</span> {{ entry.xp_points | number }} XP</span>
                 </div>
                 <span class="lb-level">Lv.{{ entry.level }}</span>
               </div>

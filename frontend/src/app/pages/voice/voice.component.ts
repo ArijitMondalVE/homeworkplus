@@ -136,9 +136,9 @@ export class VoiceComponent implements OnDestroy {
 
   getStatusIcon(): string {
     const icons: Record<string, string> = {
-      idle: '🎙️', recording: '🔴', processing: '⏳', done: '✅',
+      idle: 'mic', recording: 'fiber_manual_record', processing: 'hourglass_empty', done: 'check_circle',
     };
-    return icons[this.voiceStatus()] ?? '🎙️';
+    return icons[this.voiceStatus()] ?? 'mic';
   }
 
   getStatusTitle(): string {

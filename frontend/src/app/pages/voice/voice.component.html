@@ -1,7 +1,7 @@
 <div class="voice-page">
   <div class="container">
     <div class="page-header animate-fade-in">
-      <h1>🎙️ Voice Tutor</h1>
+      <h1><span class="material-symbols-rounded" style="font-size: inherit; vertical-align: bottom;">mic</span> Voice Tutor</h1>
       <p>Speak your question — your AI tutor will answer and explain</p>
     </div>
 
@@ -11,7 +11,7 @@
         <!-- Status Display -->
         <div class="status-display" [class]="'status-' + voiceStatus()">
           <div class="status-orb" [class.pulsing]="isRecording()">
-            <div class="orb-inner">{{ getStatusIcon() }}</div>
+            <div class="orb-inner"><span class="material-symbols-rounded">{{ getStatusIcon() }}</span></div>
           </div>
           <div class="status-text">
             <h3>{{ getStatusTitle() }}</h3>
@@ -35,13 +35,13 @@
           [disabled]="isProcessing()"
         >
           @if (isRecording()) {
-            <span class="btn-icon-large">⏹️</span>
+            <span class="btn-icon-large material-symbols-rounded">stop_circle</span>
             <span>Stop Recording</span>
           } @else if (isProcessing()) {
             <span class="spinner"></span>
             <span>Processing...</span>
           } @else {
-            <span class="btn-icon-large">🎤</span>
+            <span class="btn-icon-large material-symbols-rounded">mic</span>
             <span>Start Speaking</span>
           }
         </button>
@@ -50,12 +50,12 @@
         <div class="voice-options">
           <label class="form-label">Language</label>
           <select class="form-input" [(ngModel)]="selectedLanguage">
-            <option value="en">🇬🇧 English</option>
-            <option value="es">🇪🇸 Spanish</option>
-            <option value="fr">🇫🇷 French</option>
-            <option value="hi">🇮🇳 Hindi</option>
-            <option value="zh">🇨🇳 Chinese</option>
-            <option value="de">🇩🇪 German</option>
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="hi">Hindi</option>
+            <option value="zh">Chinese</option>
+            <option value="de">German</option>
           </select>
         </div>
 
@@ -78,7 +78,7 @@
       <!-- Right: Conversation -->
       <div class="conversation-panel glass-card animate-fade-in">
         <div class="conv-header">
-          <h3>💬 Conversation</h3>
+          <h3><span class="material-symbols-rounded">chat</span> Conversation</h3>
           @if (messages().length > 0) {
             <button class="btn btn-ghost btn-sm" (click)="clearConversation()">Clear</button>
           }
@@ -87,7 +87,7 @@
         <div class="messages-container" #messagesContainer>
           @if (messages().length === 0) {
             <div class="conv-empty">
-              <div class="empty-icon animate-float">🤖</div>
+              <div class="empty-icon animate-float"><span class="material-symbols-rounded" style="font-size: 48px">smart_toy</span></div>
               <h3>Your AI Tutor is ready</h3>
               <p>Press the microphone button and ask any homework question. I'll explain it step by step!</p>
               <div class="sample-questions">
@@ -102,7 +102,7 @@
           @for (msg of messages(); track $index) {
             <div class="message" [class]="'message-' + msg.role">
               <div class="msg-avatar">
-                {{ msg.role === 'user' ? '👤' : '🤖' }}
+                <span class="material-symbols-rounded">{{ msg.role === 'user' ? 'person' : 'smart_toy' }}</span>
               </div>
               <div class="msg-bubble">
                 <p class="msg-role">{{ msg.role === 'user' ? 'You' : 'AI Tutor' }}</p>
@@ -113,7 +113,7 @@
 
           @if (isProcessing()) {
             <div class="message message-assistant">
-              <div class="msg-avatar">🤖</div>
+              <div class="msg-avatar"><span class="material-symbols-rounded">smart_toy</span></div>
               <div class="msg-bubble typing-indicator">
                 <span></span><span></span><span></span>
               </div>
@@ -124,7 +124,7 @@
         <!-- TTS Playback -->
         @if (currentAudioUrl()) {
           <div class="tts-player">
-            <span>🔊 AI Voice Response:</span>
+            <span><span class="material-symbols-rounded">volume_up</span> AI Voice Response:</span>
             <audio controls autoplay [src]="currentAudioUrl()" class="audio-player"></audio>
           </div>
         }

@@ -12,29 +12,29 @@ import { AuthService } from '../../services/auth.service';
       <div class="nav-container">
         <!-- Logo -->
         <a routerLink="/dashboard" class="nav-logo">
-          <span class="logo-icon">📚</span>
+          <span class="logo-icon material-symbols-rounded">menu_book</span>
           <span class="logo-text">Homework<span class="logo-accent">Plus</span></span>
         </a>
 
         <!-- Nav Links -->
         <div class="nav-links" [class.open]="mobileOpen">
           <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
-            <span>🏠</span> Dashboard
+            <span class="material-symbols-rounded">home</span> Dashboard
           </a>
           <a routerLink="/solve" routerLinkActive="active" class="nav-link">
-            <span>📷</span> Solve
+            <span class="material-symbols-rounded">photo_camera</span> Solve
           </a>
           <a routerLink="/voice" routerLinkActive="active" class="nav-link">
-            <span>🎙️</span> Voice
+            <span class="material-symbols-rounded">mic</span> Voice
           </a>
           <a routerLink="/whiteboard" routerLinkActive="active" class="nav-link">
-            <span>✏️</span> Whiteboard
+            <span class="material-symbols-rounded">edit</span> Whiteboard
           </a>
           <a routerLink="/map" routerLinkActive="active" class="nav-link">
-            <span>🌌</span> 3D Map
+            <span class="material-symbols-rounded">explore</span> 3D Map
           </a>
           <a routerLink="/subjects" routerLinkActive="active" class="nav-link">
-            <span>📖</span> Subjects
+            <span class="material-symbols-rounded">import_contacts</span> Subjects
           </a>
         </div>
 
@@ -42,7 +42,7 @@ import { AuthService } from '../../services/auth.service';
         <div class="nav-actions">
           @if (auth.currentUser()) {
             <div class="user-xp">
-              <span class="xp-badge">⚡ {{ auth.currentUser()?.xp_points | number }} XP</span>
+              <span class="xp-badge"><span class="material-symbols-rounded" style="font-size: 14px">bolt</span> {{ auth.currentUser()?.xp_points | number }} XP</span>
               <span class="level-badge">Lv.{{ auth.currentUser()?.level }}</span>
             </div>
             <a routerLink="/profile" class="avatar-btn">
