@@ -79,15 +79,21 @@ export class VoiceComponent implements OnDestroy {
   }
 
   processAudioBlob(blob: Blob): void {
-    // In a real app, upload blob to /api/v1/voice/transcribe
-    // For MVP, simulate transcription
     this.isProcessing.set(true);
-    const transcript = 'Explain the quadratic formula'; // Simulated
-
-    setTimeout(() => {
-      this.addMessage('user', transcript);
-      this.sendToChatApi(transcript);
-    }, 1000);
+    
+    this.aiService.transcribeAudio(blob, this.selectedLanguage).subscribe({
+      next: (res) => {
+        const transcript = res.text || 'Could not understand audio.';
+        this.addMessage('user', transcript);
+        this.sendToChatApi(transcript);
+      },
+      error: (err) => {
+        console.error('Transcription failed:', err);
+        this.addMessage('assistant', 'Sorry, I had trouble hearing you. Please try again.');
+        this.isProcessing.set(false);
+        this.voiceStatus.set('idle');
+      }
+    });
   }
 
   sendTextMessage(): void {

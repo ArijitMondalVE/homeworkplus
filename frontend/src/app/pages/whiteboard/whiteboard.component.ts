@@ -2,6 +2,9 @@ import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit } fr
 import * as fabric from 'fabric';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-whiteboard',
@@ -10,7 +13,7 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './whiteboard.component.html',
   styleUrls: ['./whiteboard.component.css']
 })
-export class WhiteboardComponent implements AfterViewInit, OnDestroy {
+export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('whiteboardCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
   activeTool = 'pen';
@@ -18,12 +21,42 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
   strokeWidth = 3;
   strokeCount = 0;
   userName = 'Y';
+  roomId = 'main';
+  joinCode = '';
 
   colors = ['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#ffffff'];
 
   private canvas: any = null;
   private history: string[] = [];
   private historyIndex = -1;
+  private ws: WebSocket | null = null;
+  private isReceivingSync = false;
+
+  constructor(private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
+
+  ngOnInit(): void {
+    const user = this.auth.currentUser();
+    this.userName = user?.username || 'Guest';
+
+    this.route.paramMap.subscribe(params => {
+      const newRoomId = params.get('roomId') || 'main';
+      const isRoomChange = this.roomId !== newRoomId && this.roomId !== 'main';
+      this.roomId = newRoomId;
+      
+      if (this.canvas) {
+        if (this.ws) {
+          this.ws.close();
+        }
+        this.canvas.clear();
+        this.canvas.backgroundColor = '#ffffff';
+        this.canvas.renderAll();
+        this.history = [];
+        this.historyIndex = -1;
+        this.strokeCount = 0;
+        this.connectWebSocket();
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     this.initCanvas();
@@ -50,10 +83,56 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
       this.canvas.on('path:created', () => {
         this.strokeCount++;
         this.saveHistory();
+        this.broadcastCanvas();
       });
+
+      this.canvas.on('object:modified', () => {
+        this.saveHistory();
+        this.broadcastCanvas();
+      });
+
+      this.connectWebSocket();
     } catch (e) {
       console.warn('Fabric.js not loaded:', e);
     }
+  }
+
+  private connectWebSocket(): void {
+    const user = this.auth.currentUser();
+    const userId = user?.id || 'anonymous';
+
+    this.ws = new WebSocket(`${environment.wsUrl}/ws/whiteboard/${this.roomId}?user_id=${userId}`);
+
+    this.ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'canvas_update' && msg.data) {
+          this.isReceivingSync = true;
+          this.canvas.loadFromJSON(msg.data).then(() => {
+            this.canvas.renderAll();
+            this.isReceivingSync = false;
+          }).catch((err: any) => {
+            console.error('Error loading JSON:', err);
+            this.isReceivingSync = false;
+          });
+        } else if (msg.type === 'clear') {
+          this.isReceivingSync = true;
+          this.canvas.clear();
+          this.canvas.backgroundColor = '#ffffff';
+          this.canvas.renderAll();
+          this.strokeCount = 0;
+          this.isReceivingSync = false;
+        }
+      } catch (e) {
+        console.error('WS message error:', e);
+      }
+    };
+  }
+
+  private broadcastCanvas(): void {
+    if (!this.canvas || !this.ws || this.ws.readyState !== WebSocket.OPEN || this.isReceivingSync) return;
+    const json = JSON.stringify(this.canvas.toJSON());
+    this.ws.send(JSON.stringify({ type: 'canvas_update', data: json }));
   }
 
   setTool(tool: string): void {
@@ -127,6 +206,7 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
         this.canvas.setActiveObject(obj);
         this.canvas.renderAll();
         this.saveHistory();
+        this.broadcastCanvas();
       }
     } catch (e) {
       console.warn('Fabric shape error:', e);
@@ -136,13 +216,25 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
   undo(): void {
     if (!this.canvas || this.historyIndex <= 0) return;
     this.historyIndex--;
-    this.loadHistory(this.history[this.historyIndex]);
+    this.loadHistoryAndBroadcast(this.history[this.historyIndex]);
   }
 
   redo(): void {
     if (!this.canvas || this.historyIndex >= this.history.length - 1) return;
     this.historyIndex++;
-    this.loadHistory(this.history[this.historyIndex]);
+    this.loadHistoryAndBroadcast(this.history[this.historyIndex]);
+  }
+
+  private loadHistoryAndBroadcast(json: string): void {
+    this.isReceivingSync = true;
+    this.canvas.loadFromJSON(json).then(() => {
+      this.canvas.renderAll();
+      this.isReceivingSync = false;
+      this.broadcastCanvas();
+    }).catch((err: any) => {
+      console.error('Error loading history:', err);
+      this.isReceivingSync = false;
+    });
   }
 
   clearCanvas(): void {
@@ -152,15 +244,44 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
     this.canvas.renderAll();
     this.strokeCount = 0;
     this.saveHistory();
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'clear' }));
+    }
   }
 
   saveCanvas(): void {
     if (!this.canvas) return;
     const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1 });
     const link = document.createElement('a');
-    link.download = `whiteboard-${Date.now()}.png`;
+    link.download = `whiteboard-${this.roomId}-${Date.now()}.png`;
     link.href = dataURL;
     link.click();
+  }
+
+  copyShareLink(): void {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Share link copied to clipboard!');
+    }).catch(err => {
+      console.error('Could not copy text: ', err);
+    });
+  }
+
+  joinRoom(): void {
+    const code = this.joinCode.trim();
+    if (code) {
+      this.router.navigate(['/whiteboard', code]).catch(err => {
+        console.error('Navigation error:', err);
+      });
+      this.joinCode = '';
+    }
+  }
+
+  generateNewRoom(): void {
+    const randomCode = Math.random().toString(36).substring(2, 8);
+    this.router.navigate(['/whiteboard', randomCode]).catch(err => {
+      console.error('Navigation error:', err);
+    });
   }
 
   private saveHistory(): void {
@@ -176,6 +297,9 @@ export class WhiteboardComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.ws) {
+      this.ws.close();
+    }
     if (this.canvas) {
       this.canvas.dispose();
     }

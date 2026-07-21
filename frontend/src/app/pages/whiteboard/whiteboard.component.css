@@ -141,3 +141,33 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* Room Management */
+.room-management {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.room-id-display {
+  font-size: 0.75rem;
+  color: #a78bfa;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  background: rgba(124, 58, 237, 0.1);
+  border-radius: 4px;
+}
+
+.room-input {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  color: #f0f4ff;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 6px;
+  width: 100px;
+  outline: none;
+}
+.room-input:focus {
+  border-color: #7c3aed;
+}

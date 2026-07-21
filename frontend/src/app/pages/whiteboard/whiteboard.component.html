@@ -53,6 +53,17 @@
       <button class="tool-btn" (click)="clearCanvas()" data-tooltip="Clear"><span class="material-symbols-rounded">delete</span></button>
       <button class="tool-btn" (click)="saveCanvas()" data-tooltip="Save PNG"><span class="material-symbols-rounded">save</span></button>
     </div>
+
+    <div class="separator"></div>
+
+    <!-- Room Management -->
+    <div class="tool-group room-management">
+      <button class="tool-btn" (click)="generateNewRoom()" data-tooltip="New Random Room"><span class="material-symbols-rounded">add_box</span></button>
+      <span class="room-id-display">Room: {{ roomId }}</span>
+      <input type="text" [(ngModel)]="joinCode" placeholder="Enter code" class="room-input" />
+      <button class="tool-btn" (click)="joinRoom()" data-tooltip="Join Room"><span class="material-symbols-rounded">login</span></button>
+      <button class="tool-btn share-btn" (click)="copyShareLink()" data-tooltip="Copy Share Link"><span class="material-symbols-rounded">share</span></button>
+    </div>
   </div>
 
   <!-- Canvas Container -->

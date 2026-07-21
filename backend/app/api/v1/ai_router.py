@@ -208,6 +208,33 @@ async def solve_from_photo(
         )
 
 
+@router.post("/voice/transcribe", status_code=status.HTTP_200_OK)
+async def transcribe_voice(
+    file: UploadFile = File(...),
+    language: str = Form("en"),
+    current_user: User = Depends(get_current_user),
+):
+    """Transcribe a voice recording."""
+    content = await file.read()
+    
+    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"voice_{uuid.uuid4()}{Path(file.filename or 'audio.webm').suffix}"
+    file_path = str(upload_dir / filename)
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    result = await voice_agent.transcribe(file_path, language=language)
+    
+    # Optionally clean up the file
+    try:
+        os.remove(file_path)
+    except OSError:
+        pass
+        
+    return result
+
 @router.post("/ask", response_model=PhotoAnswerResponse)
 async def ask_text_question(
     payload: QuestionCreate,

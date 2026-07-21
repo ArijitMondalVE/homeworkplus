@@ -32,6 +32,11 @@ export const routes: Routes = [
   },
   {
     path: 'whiteboard',
+    redirectTo: '/whiteboard/main',
+    pathMatch: 'full',
+  },
+  {
+    path: 'whiteboard/:roomId',
     loadComponent: () =>
       import('./pages/whiteboard/whiteboard.component').then((m) => m.WhiteboardComponent),
     canActivate: [authGuard],

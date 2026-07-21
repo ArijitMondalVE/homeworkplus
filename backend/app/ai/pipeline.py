@@ -149,7 +149,12 @@ class PhotoAnswerPipeline:
                 logger.info(f"[Pipeline:{pipeline_id}] Step 8: TTS Generation")
                 voice_text = f"{result['answer']}. {result.get('explanation', '')}"
                 voice_path = await self.voice.text_to_speech(voice_text[:1000], language=language)
-                result["voice_url"] = voice_path
+                if voice_path:
+                    import os
+                    filename = os.path.basename(voice_path)
+                    result["voice_url"] = f"http://localhost:8000/uploads/{filename}"
+                else:
+                    result["voice_url"] = None
                 result["steps_completed"].append("tts_generation")
 
             # ── Done ──────────────────────────────────────────────────

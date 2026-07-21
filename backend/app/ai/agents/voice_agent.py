@@ -40,8 +40,35 @@ class VoiceAgent:
         if settings.OPENAI_API_KEY:
             return await self._transcribe_openai_api(audio_path, language)
 
-        logger.warning("[VoiceAgent] OpenAI API Key is missing and local whisper fallback is removed.")
-        return {"text": "", "language": language, "confidence": 0, "segments": [], "engine": "none"}
+        logger.warning("[VoiceAgent] OpenAI API Key is missing. Using local whisper fallback.")
+        return await self._transcribe_local(audio_path, language)
+
+    async def _transcribe_local(self, audio_path: str, language: str) -> dict[str, Any]:
+        """Use local Whisper model for transcription."""
+        try:
+            model = self._get_whisper()
+            if model is None:
+                return {"text": "", "language": language, "confidence": 0, "segments": [], "engine": "none"}
+            
+            import asyncio
+            # Whisper transcription can be blocking, run in executor
+            loop = asyncio.get_event_loop()
+            
+            def _run():
+                return model.transcribe(audio_path, language=language if language != "auto" else None)
+                
+            result = await loop.run_in_executor(None, _run)
+            
+            return {
+                "text": result.get("text", ""),
+                "language": result.get("language", language),
+                "confidence": 0.9,
+                "segments": result.get("segments", []),
+                "engine": "local_whisper"
+            }
+        except Exception as e:
+            logger.error(f"[VoiceAgent] Local whisper failed: {e}")
+            return {"text": "", "language": language, "confidence": 0, "segments": [], "engine": "error"}
 
     async def _transcribe_openai_api(self, audio_path: str, language: str) -> dict[str, Any]:
         """Use OpenAI Whisper API for transcription."""
