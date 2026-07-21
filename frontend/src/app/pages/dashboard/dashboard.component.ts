@@ -82,4 +82,28 @@ export class DashboardComponent implements OnInit {
     if (rank === 3) return 'looks_3';
     return '';
   }
+
+  showConfirmModal = signal(false);
+
+  confirmClear(): void {
+    this.showConfirmModal.set(true);
+  }
+
+  cancelClear(): void {
+    this.showConfirmModal.set(false);
+  }
+
+  clearRecentActivity(): void {
+    this.showConfirmModal.set(false);
+    this.isLoading.set(true);
+    this.aiService.clearRecentQuestions().subscribe({
+      next: () => {
+        this.loadDashboard();
+      },
+      error: (err) => {
+        console.error('Failed to clear recent activity', err);
+        this.isLoading.set(false);
+      },
+    });
+  }
 }

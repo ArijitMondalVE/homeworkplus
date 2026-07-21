@@ -113,4 +113,8 @@ export class AiService {
   markNotificationRead(id: string): Observable<any> {
     return this.http.patch(`${this.API}/dashboard/notifications/${id}/read`, {});
   }
+
+  clearRecentQuestions(): Observable<any> {
+    return this.http.delete(`${this.API}/dashboard/questions/clear`);
+  }
 }
