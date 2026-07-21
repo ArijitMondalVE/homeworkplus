@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: '/api/v1',
-  wsUrl: '',
+  apiUrl: 'https://homeworkplus.onrender.com/api/v1',
+  wsUrl: 'https://homeworkplus.onrender.com',
 };
