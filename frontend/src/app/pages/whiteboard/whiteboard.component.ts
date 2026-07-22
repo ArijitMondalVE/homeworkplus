@@ -164,13 +164,16 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         } else if (msg.type === 'object_added') {
           this.isReceivingSync = true;
           // @ts-ignore
-          fabric.util.enlivenObjects([msg.data], (objects: any[]) => {
+          fabric.util.enlivenObjects([msg.data]).then((objects: any[]) => {
             const obj = objects[0];
             const existing = this.canvas.getObjects().find((o: any) => o.id === obj.id);
             if (!existing) {
               this.canvas.add(obj);
               this.canvas.renderAll();
             }
+            this.isReceivingSync = false;
+          }).catch((err: any) => {
+            console.error('Error enlivening object:', err);
             this.isReceivingSync = false;
           });
         } else if (msg.type === 'object_modified') {

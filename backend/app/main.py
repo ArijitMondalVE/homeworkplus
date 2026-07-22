@@ -54,9 +54,9 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:4200",
         "http://localhost:3000",
-        "https://homeworkplus-q73a72ksr-arijit-s-projects3.vercel.app",
         "https://homeworkplus.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
