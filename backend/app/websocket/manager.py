@@ -18,24 +18,34 @@ class ConnectionManager:
     def __init__(self):
         # room_id -> list of connected WebSockets
         self.active_connections: dict[str, list[WebSocket]] = defaultdict(list)
-        # websocket -> user_id
-        self.user_map: dict[WebSocket, str] = {}
+        # websocket -> dict with id and name
+        self.user_map: dict[WebSocket, dict] = {}
 
-    async def connect(self, websocket: WebSocket, room_id: str, user_id: str) -> None:
+    async def connect(self, websocket: WebSocket, room_id: str, user_id: str, user_name: str = "Anonymous") -> None:
         await websocket.accept()
         self.active_connections[room_id].append(websocket)
-        self.user_map[websocket] = user_id
-        logger.info(f"[WS] User {user_id} connected to room {room_id}")
+        self.user_map[websocket] = {"id": user_id, "name": user_name}
+        logger.info(f"[WS] User {user_name} ({user_id}) connected to room {room_id}")
+
+        count = len(self.active_connections[room_id])
+        users = self.get_room_users(room_id)
+        
+        # Send current room info to the newly joined user
+        await self.send_personal(
+            websocket,
+            {"type": "room_info", "user_count": count, "users": users}
+        )
 
         # Notify others
         await self.broadcast_to_room(
             room_id=room_id,
-            message={"type": "user_joined", "user_id": user_id},
+            message={"type": "user_joined", "user_id": user_id, "user_name": user_name, "user_count": count, "users": users},
             exclude=websocket,
         )
 
     def disconnect(self, websocket: WebSocket, room_id: str) -> None:
-        user_id = self.user_map.pop(websocket, "unknown")
+        user_info = self.user_map.pop(websocket, {"id": "unknown", "name": "unknown"})
+        user_id = user_info["id"]
         if websocket in self.active_connections[room_id]:
             self.active_connections[room_id].remove(websocket)
         if not self.active_connections[room_id]:
@@ -67,7 +77,7 @@ class ConnectionManager:
         for ws in dead:
             self.active_connections[room_id].remove(ws)
 
-    def get_room_users(self, room_id: str) -> list[str]:
+    def get_room_users(self, room_id: str) -> list[dict]:
         return [
             self.user_map[ws]
             for ws in self.active_connections.get(room_id, [])

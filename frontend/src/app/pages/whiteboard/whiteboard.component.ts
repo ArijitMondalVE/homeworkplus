@@ -21,8 +21,10 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   activeColor = '#1e293b';
   strokeWidth = 3;
   strokeCount = 0;
-  userName = 'Y';
+  userName = 'Anonymous';
   roomId = 'main';
+  userCount = 1;
+  connectedUsers: {id: string, name: string}[] = [];
   joinCode = '';
   isSolving = false;
   aiResponse: PhotoAnswerResponse | null = null;
@@ -45,7 +47,9 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     const user = this.auth.currentUser();
-    this.userName = user?.username || 'Guest';
+    if (user) {
+      this.userName = user.full_name || 'Anonymous';
+    }
 
     this.route.paramMap.subscribe(params => {
       const newRoomId = params.get('roomId') || 'main';
@@ -109,8 +113,9 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private connectWebSocket(): void {
     const user = this.auth.currentUser();
     const userId = user?.id || 'anonymous';
+    const encodedName = encodeURIComponent(this.userName);
 
-    this.ws = new WebSocket(`${environment.wsUrl}/ws/whiteboard/${this.roomId}?user_id=${userId}`);
+    this.ws = new WebSocket(`${environment.wsUrl}/ws/whiteboard/${this.roomId}?user_id=${userId}&user_name=${encodedName}`);
 
     this.ws.onmessage = (event) => {
       try {
@@ -131,6 +136,13 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
           this.canvas.renderAll();
           this.strokeCount = 0;
           this.isReceivingSync = false;
+        } else if (msg.type === 'room_info' || msg.type === 'user_joined' || msg.type === 'user_left') {
+          if (msg.user_count !== undefined) {
+            this.userCount = msg.user_count;
+          }
+          if (msg.users !== undefined) {
+            this.connectedUsers = msg.users;
+          }
         }
       } catch (e) {
         console.error('WS message error:', e);
@@ -267,13 +279,28 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     link.click();
   }
 
-  copyShareLink(): void {
+  async shareRoom(): Promise<void> {
     const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      alert('Share link copied to clipboard!');
-    }).catch(err => {
-      console.error('Could not copy text: ', err);
-    });
+    const title = 'Join my Whiteboard on HomeworkPlus';
+    const text = `Join my collaborative whiteboard session! Room ID: ${this.roomId}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text,
+          url
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Share link copied to clipboard!');
+      }).catch(err => {
+        console.error('Could not copy text: ', err);
+      });
+    }
   }
 
   joinRoom(): void {
@@ -289,6 +316,16 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   generateNewRoom(): void {
     const randomCode = Math.random().toString(36).substring(2, 8);
     this.router.navigate(['/whiteboard', randomCode]).catch(err => {
+      console.error('Navigation error:', err);
+    });
+  }
+
+  leaveRoom(): void {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.router.navigate(['/dashboard']).catch(err => {
       console.error('Navigation error:', err);
     });
   }

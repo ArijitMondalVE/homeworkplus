@@ -16,7 +16,8 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
     Message types: canvas_update, cursor_move, clear, undo
     """
     user_id = websocket.query_params.get("user_id", "anonymous")
-    await ws_manager.connect(websocket, f"whiteboard:{room_id}", user_id)
+    user_name = websocket.query_params.get("user_name", "Anonymous")
+    await ws_manager.connect(websocket, f"whiteboard:{room_id}", user_id, user_name)
 
     try:
         while True:
@@ -32,9 +33,11 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
                 )
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket, f"whiteboard:{room_id}")
+        count = len(ws_manager.active_connections.get(f"whiteboard:{room_id}", []))
+        users = ws_manager.get_room_users(f"whiteboard:{room_id}")
         await ws_manager.broadcast_to_room(
             f"whiteboard:{room_id}",
-            {"type": "user_left", "user_id": user_id},
+            {"type": "user_left", "user_id": user_id, "user_count": count, "users": users},
         )
 
 

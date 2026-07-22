@@ -12,9 +12,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.625rem 1rem;
+  padding: 0.75rem 1rem;
   flex-shrink: 0;
   flex-wrap: wrap;
+  overflow: visible !important;
+  z-index: 50;
 }
 
 .tool-group { display: flex; align-items: center; gap: 0.25rem; }
@@ -36,6 +38,12 @@
 
 .tool-btn:hover { background: rgba(255, 255, 255, 0.08); color: #f0f4ff; }
 .tool-btn.active { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+
+/* Override tooltip position to appear below the button to prevent cutoff at top of screen */
+.wb-toolbar [data-tooltip]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
 
 .separator {
   width: 1px;
@@ -99,6 +107,20 @@
   gap: 0.375rem;
 }
 
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-stack .collab-avatar {
+  margin-left: -10px;
+  box-shadow: 0 0 0 2px #050a14;
+}
+
+.avatar-stack .collab-avatar:first-child {
+  margin-left: 0;
+}
+
 .collab-avatar {
   width: 32px;
   height: 32px;
@@ -113,6 +135,42 @@
   border: 2px solid white;
   cursor: pointer;
 }
+
+.collab-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f0f4ff;
+  background: rgba(15, 32, 64, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0 0.75rem;
+  border-radius: 16px;
+}
+
+.room-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a78bfa;
+  background: rgba(124, 58, 237, 0.1);
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.separator-vert {
+  width: 1px;
+  height: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 0.25rem;
+}
+
+.danger-icon { color: #f43f5e !important; }
+.danger-icon:hover { background: rgba(244, 63, 94, 0.1) !important; }
 
 /* Status */
 .wb-status {

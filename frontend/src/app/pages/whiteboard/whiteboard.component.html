@@ -61,11 +61,16 @@
 
     <!-- Room Management -->
     <div class="tool-group room-management">
-      <button class="tool-btn" (click)="generateNewRoom()" data-tooltip="New Random Room"><span class="material-symbols-rounded">add_box</span></button>
-      <span class="room-id-display">Room: {{ roomId }}</span>
-      <input type="text" [(ngModel)]="joinCode" placeholder="Enter code" class="room-input" />
+      <button class="tool-btn" (click)="generateNewRoom()" data-tooltip="New Room"><span class="material-symbols-rounded">add_box</span></button>
+      <div class="room-badge" data-tooltip="Room ID">
+        <span class="material-symbols-rounded" style="font-size: 16px;">meeting_room</span>
+        {{ roomId }}
+      </div>
+      <button class="tool-btn share-btn" (click)="shareRoom()" data-tooltip="Share Room"><span class="material-symbols-rounded">share</span></button>
+      <div class="separator-vert"></div>
+      <input type="text" [(ngModel)]="joinCode" placeholder="Code..." class="room-input" (keyup.enter)="joinRoom()" />
       <button class="tool-btn" (click)="joinRoom()" data-tooltip="Join Room"><span class="material-symbols-rounded">login</span></button>
-      <button class="tool-btn share-btn" (click)="copyShareLink()" data-tooltip="Copy Share Link"><span class="material-symbols-rounded">share</span></button>
+      <button class="tool-btn danger-icon" (click)="leaveRoom()" data-tooltip="Leave Room"><span class="material-symbols-rounded">logout</span></button>
     </div>
   </div>
 
@@ -75,8 +80,17 @@
 
     <!-- Collaborators -->
     <div class="collaborators">
-      <div class="collab-avatar" data-tooltip="You (online)">
-        {{ userName }}
+      <div class="collab-badge">
+        <span class="material-symbols-rounded" style="font-size:16px;">group</span>
+        {{ userCount }} {{ userCount === 1 ? 'person' : 'people' }}
+      </div>
+      <div class="avatar-stack" *ngIf="connectedUsers.length > 0">
+        <div class="collab-avatar" *ngFor="let u of connectedUsers" [attr.data-tooltip]="u.name">
+          {{ (u.name || 'A').charAt(0).toUpperCase() }}
+        </div>
+      </div>
+      <div class="collab-avatar" *ngIf="connectedUsers.length === 0" [attr.data-tooltip]="userName + ' (You)'">
+        {{ (userName || 'A').charAt(0).toUpperCase() }}
       </div>
     </div>
 
