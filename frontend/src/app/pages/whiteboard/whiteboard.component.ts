@@ -38,6 +38,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   
   isSidebarOpen = false;
   activeMenuId: string | null = null;
+  remoteCursors: { [userId: string]: { x: number, y: number, name: string } } = {};
   
   connectedUsers: {id: string, name: string}[] = [];
   joinCode = '';
@@ -129,6 +130,18 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
 
+      let lastMoveTime = 0;
+      this.canvas.on('mouse:move', (o: any) => {
+        const now = Date.now();
+        if (now - lastMoveTime > 30) { // Throttle to ~30 FPS max
+          lastMoveTime = now;
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            const pointer = this.canvas.getPointer(o.e);
+            this.ws.send(JSON.stringify({ type: 'cursor_move', data: { x: pointer.x, y: pointer.y } }));
+          }
+        }
+      });
+
       this.connectWebSocket();
     } catch (e) {
       console.warn('Fabric.js not loaded:', e);
@@ -185,6 +198,13 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
             this.canvas.renderAll();
           }
           this.isReceivingSync = false;
+        } else if (msg.type === 'cursor_move') {
+          if (msg.sender !== this.userId && msg.data) {
+            const senderInfo = this.connectedUsers.find(u => u.id === msg.sender);
+            if (senderInfo) {
+              this.remoteCursors[msg.sender] = { x: msg.data.x, y: msg.data.y, name: senderInfo.name };
+            }
+          }
         } else if (msg.type === 'room_info' || msg.type === 'user_joined' || msg.type === 'user_left') {
           if (msg.user_count !== undefined) {
             this.userCount = msg.user_count;
@@ -197,6 +217,9 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
           }
           if (msg.allowed_drawers !== undefined) {
             this.allowedDrawers = new Set(msg.allowed_drawers);
+          }
+          if (msg.type === 'user_left' && msg.user_id) {
+            delete this.remoteCursors[msg.user_id];
           }
           this.applyPermissions();
           // If a new user joined, broadcast our full canvas state to sync them up
@@ -219,6 +242,11 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         } else if (msg.type === 'room_disbanded') {
           alert("The room admin has disbanded this room.");
           this.closeAndLeave();
+        } else if (msg.type === 'kicked') {
+          if (msg.target_id === this.userId) {
+            alert("You have been kicked from the room by the Admin.");
+            this.closeAndLeave();
+          }
         }
       } catch (e) {
         console.error('WS message error:', e);
@@ -466,6 +494,11 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ws?.send(JSON.stringify({ type: 'promote_admin', target_id: targetUserId }));
   }
 
+  kickUser(targetUserId: string): void {
+    if (!this.isAdmin) return;
+    this.ws?.send(JSON.stringify({ type: 'kick_user', target_id: targetUserId }));
+  }
+
   toggleMenu(userId: string): void {
     this.activeMenuId = this.activeMenuId === userId ? null : userId;
   }
@@ -484,6 +517,10 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadHistory(json: string): void {
     this.canvas.loadFromJSON(json, () => this.canvas.renderAll());
+  }
+
+  getRemoteCursors() {
+    return Object.values(this.remoteCursors);
   }
 
   ngOnDestroy(): void {

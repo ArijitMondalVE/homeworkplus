@@ -59,6 +59,15 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
                         message={"type": "permissions_update", "allowed_drawers": list(ws_manager.room_drawers[room_key])}
                     )
             
+            elif msg_type == "kick_user":
+                room_key = f"whiteboard:{room_id}"
+                if user_id == ws_manager.room_admins.get(room_key):
+                    target_id = data.get("target_id")
+                    await ws_manager.broadcast_to_room(
+                        room_id=room_key,
+                        message={"type": "kicked", "target_id": target_id}
+                    )
+            
             elif msg_type == "promote_admin":
                 room_key = f"whiteboard:{room_id}"
                 if user_id == ws_manager.room_admins.get(room_key):

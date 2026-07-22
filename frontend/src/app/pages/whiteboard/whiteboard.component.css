@@ -269,6 +269,46 @@
   color: #7c3aed;
 }
 
+.kick-item:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.kick-item:hover .material-symbols-rounded {
+  color: #ef4444;
+}
+
+/* Remote Cursors */
+.remote-cursor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  transform: translate(-4px, -4px);
+  transition: top 0.1s linear, left 0.1s linear;
+}
+
+.remote-cursor .cursor-pointer {
+  font-size: 20px;
+  color: #ef4444;
+  transform: rotate(-35deg);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.remote-cursor .cursor-name {
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: -2px;
+  margin-top: 14px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
 .action-btn {
   background: transparent;
   border: none;

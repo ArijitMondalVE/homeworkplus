@@ -85,6 +85,12 @@
   <div class="canvas-wrapper">
     <canvas #whiteboardCanvas id="whiteboard-canvas"></canvas>
 
+    <!-- Remote Cursors -->
+    <div class="remote-cursor" *ngFor="let cursor of getRemoteCursors()" [style.left.px]="cursor.x" [style.top.px]="cursor.y">
+      <span class="material-symbols-rounded cursor-pointer">arrow_selector_tool</span>
+      <span class="cursor-name">{{ cursor.name }}</span>
+    </div>
+
     <!-- Status -->
     <div class="wb-status">
       <span class="status-dot" [class.active]="ws?.readyState === 1"></span>
@@ -136,6 +142,9 @@
               <button class="menu-item" (click)="toggleAccess(u.id); activeMenuId = null">
                 <span class="material-symbols-rounded">{{ allowedDrawers.has(u.id) ? 'draw_off' : 'draw' }}</span> 
                 {{ allowedDrawers.has(u.id) ? 'Revoke Draw Access' : 'Grant Draw Access' }}
+              </button>
+              <button class="menu-item kick-item" (click)="kickUser(u.id); activeMenuId = null">
+                <span class="material-symbols-rounded">person_remove</span> Kick User
               </button>
             </div>
           </div>
