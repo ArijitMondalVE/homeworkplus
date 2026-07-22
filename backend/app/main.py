@@ -51,7 +51,12 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=[
+        "http://localhost:4200",
+        "http://localhost:3000",
+        "https://homeworkplus-q73a72ksr-arijit-s-projects3.vercel.app",
+        "https://homeworkplus.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
