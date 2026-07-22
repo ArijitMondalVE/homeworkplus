@@ -52,6 +52,9 @@
       <button class="tool-btn" (click)="redo()" data-tooltip="Redo"><span class="material-symbols-rounded">redo</span></button>
       <button class="tool-btn" (click)="clearCanvas()" data-tooltip="Clear"><span class="material-symbols-rounded">delete</span></button>
       <button class="tool-btn" (click)="saveCanvas()" data-tooltip="Save PNG"><span class="material-symbols-rounded">save</span></button>
+      <button class="tool-btn solve-ai-btn" (click)="solveWithAI()" [disabled]="isSolving" data-tooltip="Solve with AI">
+        <span class="material-symbols-rounded" [class.spinning]="isSolving">{{ isSolving ? 'sync' : 'psychology' }}</span>
+      </button>
     </div>
 
     <div class="separator"></div>
@@ -83,4 +86,53 @@
       {{ strokeCount }} strokes
     </div>
   </div>
+
+  <!-- AI Solution Modal -->
+  @if (aiResponse || aiError) {
+    <div class="ai-modal-overlay">
+      <div class="ai-modal glass-card">
+        <div class="ai-modal-header">
+          <h3>AI Solution</h3>
+          <button class="close-btn" (click)="closeAiModal()">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+        
+        <div class="ai-modal-content">
+          @if (aiError) {
+            <div class="error-msg">
+              <span class="material-symbols-rounded">error</span>
+              {{ aiError }}
+            </div>
+          } @else if (aiResponse) {
+            <div class="solution-container">
+              @if (aiResponse.question_text) {
+                <div class="question-box">
+                  <strong>Question:</strong> {{ aiResponse.question_text }}
+                </div>
+              }
+              
+              <div class="answer-box">
+                <p>{{ aiResponse.answer_text }}</p>
+                @if (aiResponse.latex) {
+                  <div class="latex-box">{{ aiResponse.latex }}</div>
+                }
+              </div>
+              
+              @if (aiResponse.steps && aiResponse.steps.length > 0) {
+                <div class="steps-box">
+                  <h4>Steps to Solve:</h4>
+                  <ul>
+                    @for (step of aiResponse.steps; track step) {
+                      <li>{{ step }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
 </div>

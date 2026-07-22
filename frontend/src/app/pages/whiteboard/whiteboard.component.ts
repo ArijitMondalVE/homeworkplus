@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../environments/environment';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AiService, PhotoAnswerResponse } from '../../services/ai.service';
 
 @Component({
   selector: 'app-whiteboard',
@@ -23,6 +24,9 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   userName = 'Y';
   roomId = 'main';
   joinCode = '';
+  isSolving = false;
+  aiResponse: PhotoAnswerResponse | null = null;
+  aiError: string | null = null;
 
   colors = ['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#ffffff'];
 
@@ -32,7 +36,12 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private ws: WebSocket | null = null;
   private isReceivingSync = false;
 
-  constructor(private auth: AuthService, private route: ActivatedRoute, private router: Router) {}
+  constructor(
+    private auth: AuthService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private aiService: AiService
+  ) {}
 
   ngOnInit(): void {
     const user = this.auth.currentUser();
@@ -303,6 +312,55 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.canvas) {
       this.canvas.dispose();
     }
+  }
+
+  async solveWithAI(): Promise<void> {
+    if (!this.canvas) return;
+    this.isSolving = true;
+    this.aiResponse = null;
+    this.aiError = null;
+
+    try {
+      // Get canvas image as base64 string
+      const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1 });
+      
+      // Convert base64 to Blob, then to File
+      const res = await fetch(dataURL);
+      const blob = await res.blob();
+      const file = new File([blob], `whiteboard-${this.roomId}-${Date.now()}.png`, { type: 'image/png' });
+
+      // Upload image
+      this.aiService.uploadImage(file).subscribe({
+        next: (uploadRes) => {
+          // Get answer
+          this.aiService.solveFromPhoto(uploadRes.image_id, { language: 'en' }).subscribe({
+            next: (answerRes) => {
+              this.aiResponse = answerRes;
+              this.isSolving = false;
+            },
+            error: (err) => {
+              console.error('AI Solve Error:', err);
+              this.aiError = 'Failed to get an answer from AI. Please try again.';
+              this.isSolving = false;
+            }
+          });
+        },
+        error: (err) => {
+          console.error('Image upload error:', err);
+          this.aiError = 'Failed to upload the whiteboard image.';
+          this.isSolving = false;
+        }
+      });
+    } catch (e) {
+      console.error('Solve preparation error:', e);
+      this.aiError = 'An error occurred while preparing the image.';
+      this.isSolving = false;
+    }
+  }
+
+  closeAiModal(): void {
+    this.aiResponse = null;
+    this.aiError = null;
   }
 
   // FormsModule needed for ngModel in toolbar
