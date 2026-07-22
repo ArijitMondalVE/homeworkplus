@@ -35,6 +35,10 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   get isDrawer(): boolean {
     return this.isAdmin || this.allowedDrawers.has(this.userId);
   }
+  
+  isSidebarOpen = false;
+  activeMenuId: string | null = null;
+  
   connectedUsers: {id: string, name: string}[] = [];
   joinCode = '';
   isSolving = false;
@@ -46,7 +50,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private canvas: any = null;
   private history: string[] = [];
   private historyIndex = -1;
-  private ws: WebSocket | null = null;
+  ws: WebSocket | null = null;
   private isReceivingSync = false;
 
   constructor(
@@ -160,7 +164,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         } else if (msg.type === 'object_added') {
           this.isReceivingSync = true;
           // @ts-ignore
-          fabric.util.enlivensObjects([msg.data], (objects: any[]) => {
+          fabric.util.enlivenObjects([msg.data], (objects: any[]) => {
             const obj = objects[0];
             const existing = this.canvas.getObjects().find((o: any) => o.id === obj.id);
             if (!existing) {
@@ -215,6 +219,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       } catch (e) {
         console.error('WS message error:', e);
+        this.isReceivingSync = false;
       }
     };
   }
@@ -456,6 +461,14 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   promoteAdmin(targetUserId: string): void {
     if (!this.isAdmin) return;
     this.ws?.send(JSON.stringify({ type: 'promote_admin', target_id: targetUserId }));
+  }
+
+  toggleMenu(userId: string): void {
+    this.activeMenuId = this.activeMenuId === userId ? null : userId;
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarOpen = !this.isSidebarOpen;
   }
 
   private saveHistory(): void {

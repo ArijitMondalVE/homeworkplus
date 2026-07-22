@@ -30,9 +30,13 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
                 admin_id = ws_manager.room_admins.get(room_key)
                 allowed_drawers = ws_manager.room_drawers.get(room_key, set())
                 
+                print(f"DEBUG: msg={msg_type}, sender={user_id}, admin={admin_id}, allowed={allowed_drawers}")
                 if user_id != admin_id and user_id not in allowed_drawers:
+                    print(f"DEBUG: IGNORING unauthorized draw from {user_id}")
                     # Silently ignore unauthorized drawing commands
                     continue
+
+                print(f"DEBUG: Broadcasting {msg_type} from {user_id} to room {room_key}")
 
                 # Broadcast to all peers in the room
                 await ws_manager.broadcast_to_room(

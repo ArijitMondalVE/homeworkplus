@@ -74,21 +74,10 @@
 
     <!-- Collaborators in Toolbar -->
     <div class="collaborators">
-      <div class="collab-badge">
-        <span class="material-symbols-rounded" style="font-size:16px;">group</span>
-        {{ userCount }} {{ userCount === 1 ? 'person' : 'people' }}
-      </div>
-      <div class="avatar-stack" *ngIf="connectedUsers.length > 0">
-        <div class="collab-avatar-wrap" *ngFor="let u of connectedUsers" [attr.data-tooltip]="u.name + (u.id === adminId ? ' (Admin)' : '')" (click)="handleAvatarClick(u.id)" [class.clickable]="isAdmin && u.id !== userId">
-          <div class="collab-avatar">{{ (u.name || 'A').charAt(0).toUpperCase() }}</div>
-          <div class="role-badge" *ngIf="u.id === adminId"><span class="material-symbols-rounded">star</span></div>
-          <div class="role-badge drawer-badge" *ngIf="u.id !== adminId && allowedDrawers.has(u.id)"><span class="material-symbols-rounded">draw</span></div>
-        </div>
-      </div>
-      <div class="collab-avatar-wrap" *ngIf="connectedUsers.length === 0" [attr.data-tooltip]="userName + ' (You)'">
-        <div class="collab-avatar">{{ (userName || 'A').charAt(0).toUpperCase() }}</div>
-        <div class="role-badge" *ngIf="isAdmin"><span class="material-symbols-rounded">star</span></div>
-      </div>
+      <button class="collab-badge-btn" (click)="toggleSidebar()" [class.active]="isSidebarOpen" data-tooltip="Show everyone">
+        <span class="material-symbols-rounded">group</span>
+        <span class="count">{{ userCount }}</span>
+      </button>
     </div>
   </div>
 
@@ -98,8 +87,61 @@
 
     <!-- Status -->
     <div class="wb-status">
-      <span class="status-dot"></span>
-      {{ strokeCount }} strokes
+      <span class="status-dot" [class.active]="ws?.readyState === 1"></span>
+      {{ ws?.readyState === 1 ? strokeCount + ' strokes' : 'Connecting...' }}
+    </div>
+  </div>
+
+  <!-- Users Sidebar -->
+  <div class="users-sidebar glass-card" [class.open]="isSidebarOpen">
+    <div class="sidebar-header">
+      <h3>People in room ({{ userCount }})</h3>
+      <button class="icon-btn" (click)="toggleSidebar()"><span class="material-symbols-rounded">close</span></button>
+    </div>
+    <div class="sidebar-content">
+      
+      <!-- Current User -->
+      <div class="user-item">
+        <div class="user-avatar-wrap">
+          <div class="user-avatar">{{ (userName || 'A').charAt(0).toUpperCase() }}</div>
+          <div class="role-badge" *ngIf="isAdmin"><span class="material-symbols-rounded">star</span></div>
+          <div class="role-badge drawer-badge" *ngIf="!isAdmin && isDrawer"><span class="material-symbols-rounded">draw</span></div>
+        </div>
+        <div class="user-info">
+          <span class="user-name">{{ userName }} (You)</span>
+          <span class="user-role">{{ isAdmin ? 'Admin' : (isDrawer ? 'Drawer' : 'Student') }}</span>
+        </div>
+      </div>
+
+      <!-- Other Users -->
+      <ng-container *ngFor="let u of connectedUsers">
+        <div class="user-item" *ngIf="u.id !== userId" (mouseleave)="activeMenuId = null">
+          <div class="user-avatar-wrap">
+            <div class="user-avatar">{{ (u.name || 'A').charAt(0).toUpperCase() }}</div>
+            <div class="role-badge" *ngIf="u.id === adminId"><span class="material-symbols-rounded">star</span></div>
+            <div class="role-badge drawer-badge" *ngIf="u.id !== adminId && allowedDrawers.has(u.id)"><span class="material-symbols-rounded">draw</span></div>
+          </div>
+          <div class="user-info">
+            <span class="user-name">{{ u.name }}</span>
+            <span class="user-role">{{ u.id === adminId ? 'Admin' : (allowedDrawers.has(u.id) ? 'Drawer' : 'Student') }}</span>
+          </div>
+          <div class="user-actions" *ngIf="isAdmin">
+            <button class="action-btn" (click)="toggleMenu(u.id)">
+              <span class="material-symbols-rounded">more_vert</span>
+            </button>
+            <div class="dropdown-menu" *ngIf="activeMenuId === u.id">
+              <button class="menu-item" (click)="handleAvatarClick(u.id); activeMenuId = null">
+                <span class="material-symbols-rounded">stars</span> Make Admin
+              </button>
+              <button class="menu-item" (click)="toggleAccess(u.id); activeMenuId = null">
+                <span class="material-symbols-rounded">{{ allowedDrawers.has(u.id) ? 'draw_off' : 'draw' }}</span> 
+                {{ allowedDrawers.has(u.id) ? 'Revoke Draw Access' : 'Grant Draw Access' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
     </div>
   </div>
 
