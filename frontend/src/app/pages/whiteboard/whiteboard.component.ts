@@ -23,7 +23,18 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   strokeCount = 0;
   userName = 'Anonymous';
   roomId = 'main';
+  userId = '';
+  adminId = '';
+  allowedDrawers = new Set<string>();
   userCount = 1;
+
+  get isAdmin(): boolean {
+    return this.userId === this.adminId;
+  }
+
+  get isDrawer(): boolean {
+    return this.isAdmin || this.allowedDrawers.has(this.userId);
+  }
   connectedUsers: {id: string, name: string}[] = [];
   joinCode = '';
   isSolving = false;
@@ -93,15 +104,25 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       this.setTool('pen');
-      this.canvas.on('path:created', () => {
+      
+      this.canvas.on('object:added', (e: any) => {
+        if (this.isReceivingSync || !e.target) return;
+        if (!e.target.id) {
+          e.target.id = Math.random().toString(36).substring(2, 9);
+        }
         this.strokeCount++;
         this.saveHistory();
-        this.broadcastCanvas();
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ type: 'object_added', data: e.target.toJSON(['id']) }));
+        }
       });
 
-      this.canvas.on('object:modified', () => {
+      this.canvas.on('object:modified', (e: any) => {
+        if (this.isReceivingSync || !e.target) return;
         this.saveHistory();
-        this.broadcastCanvas();
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({ type: 'object_modified', data: e.target.toJSON(['id']) }));
+        }
       });
 
       this.connectWebSocket();
@@ -112,10 +133,10 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private connectWebSocket(): void {
     const user = this.auth.currentUser();
-    const userId = user?.id || 'anonymous';
+    this.userId = user?.id || 'anonymous';
     const encodedName = encodeURIComponent(this.userName);
 
-    this.ws = new WebSocket(`${environment.wsUrl}/ws/whiteboard/${this.roomId}?user_id=${userId}&user_name=${encodedName}`);
+    this.ws = new WebSocket(`${environment.wsUrl}/ws/whiteboard/${this.roomId}?user_id=${this.userId}&user_name=${encodedName}`);
 
     this.ws.onmessage = (event) => {
       try {
@@ -136,6 +157,27 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
           this.canvas.renderAll();
           this.strokeCount = 0;
           this.isReceivingSync = false;
+        } else if (msg.type === 'object_added') {
+          this.isReceivingSync = true;
+          // @ts-ignore
+          fabric.util.enlivensObjects([msg.data], (objects: any[]) => {
+            const obj = objects[0];
+            const existing = this.canvas.getObjects().find((o: any) => o.id === obj.id);
+            if (!existing) {
+              this.canvas.add(obj);
+              this.canvas.renderAll();
+            }
+            this.isReceivingSync = false;
+          });
+        } else if (msg.type === 'object_modified') {
+          this.isReceivingSync = true;
+          const targetObj = this.canvas.getObjects().find((o: any) => o.id === msg.data.id);
+          if (targetObj) {
+            targetObj.set(msg.data);
+            targetObj.setCoords();
+            this.canvas.renderAll();
+          }
+          this.isReceivingSync = false;
         } else if (msg.type === 'room_info' || msg.type === 'user_joined' || msg.type === 'user_left') {
           if (msg.user_count !== undefined) {
             this.userCount = msg.user_count;
@@ -143,11 +185,61 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
           if (msg.users !== undefined) {
             this.connectedUsers = msg.users;
           }
+          if (msg.admin_id !== undefined) {
+            this.adminId = msg.admin_id;
+          }
+          if (msg.allowed_drawers !== undefined) {
+            this.allowedDrawers = new Set(msg.allowed_drawers);
+          }
+          this.applyPermissions();
+          // If a new user joined, broadcast our full canvas state to sync them up
+          if (msg.type === 'user_joined' && this.isAdmin) {
+            this.broadcastCanvas();
+          }
+        } else if (msg.type === 'permissions_update') {
+          if (msg.allowed_drawers !== undefined) {
+            this.allowedDrawers = new Set(msg.allowed_drawers);
+          }
+          this.applyPermissions();
+        } else if (msg.type === 'admin_promoted') {
+          if (msg.admin_id !== undefined) {
+            this.adminId = msg.admin_id;
+          }
+          if (msg.allowed_drawers !== undefined) {
+            this.allowedDrawers = new Set(msg.allowed_drawers);
+          }
+          this.applyPermissions();
+        } else if (msg.type === 'room_disbanded') {
+          alert("The room admin has disbanded this room.");
+          this.closeAndLeave();
         }
       } catch (e) {
         console.error('WS message error:', e);
       }
     };
+  }
+
+  private applyPermissions(): void {
+    if (!this.canvas) return;
+    if (this.isDrawer) {
+      if (['pen', 'highlighter', 'eraser'].includes(this.activeTool)) {
+        this.canvas.isDrawingMode = true;
+      }
+      this.canvas.selection = true;
+      this.canvas.forEachObject((obj: any) => {
+        obj.selectable = true;
+        obj.evented = true;
+      });
+    } else {
+      this.canvas.isDrawingMode = false;
+      this.canvas.selection = false;
+      this.canvas.forEachObject((obj: any) => {
+        obj.selectable = false;
+        obj.evented = false;
+      });
+      this.canvas.discardActiveObject();
+    }
+    this.canvas.renderAll();
   }
 
   private broadcastCanvas(): void {
@@ -223,11 +315,11 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       if (obj) {
+        obj.id = Math.random().toString(36).substring(2, 9);
         this.canvas.add(obj);
         this.canvas.setActiveObject(obj);
         this.canvas.renderAll();
-        this.saveHistory();
-        this.broadcastCanvas();
+        // Object added will be fired automatically, which handles saveHistory and ws send
       }
     } catch (e) {
       console.warn('Fabric shape error:', e);
@@ -321,6 +413,22 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   leaveRoom(): void {
+    if (this.isAdmin && this.connectedUsers.length > 1) {
+      if (confirm('You are the Admin. Do you want to DISBAND the room (kick everyone)? \n\nClick OK to Disband, or Cancel to automatically pass Admin to someone else and leave.')) {
+        this.ws?.send(JSON.stringify({ type: 'disband_room' }));
+        this.closeAndLeave();
+        return;
+      } else {
+        const nextUser = this.connectedUsers.find(u => u.id !== this.userId);
+        if (nextUser) {
+           this.promoteAdmin(nextUser.id);
+        }
+      }
+    }
+    this.closeAndLeave();
+  }
+
+  private closeAndLeave(): void {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -328,6 +436,26 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/dashboard']).catch(err => {
       console.error('Navigation error:', err);
     });
+  }
+
+  handleAvatarClick(targetUserId: string): void {
+    if (!this.isAdmin || targetUserId === this.userId) return;
+    
+    if (confirm(`Do you want to make this user the Admin?\n\nClick OK to promote them to Admin. Click Cancel to toggle their Drawing permissions instead.`)) {
+      this.promoteAdmin(targetUserId);
+    } else {
+      this.toggleAccess(targetUserId);
+    }
+  }
+
+  toggleAccess(targetUserId: string): void {
+    if (!this.isAdmin) return;
+    this.ws?.send(JSON.stringify({ type: 'toggle_access', target_id: targetUserId }));
+  }
+
+  promoteAdmin(targetUserId: string): void {
+    if (!this.isAdmin) return;
+    this.ws?.send(JSON.stringify({ type: 'promote_admin', target_id: targetUserId }));
   }
 
   private saveHistory(): void {

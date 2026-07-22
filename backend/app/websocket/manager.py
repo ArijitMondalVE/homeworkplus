@@ -20,26 +20,40 @@ class ConnectionManager:
         self.active_connections: dict[str, list[WebSocket]] = defaultdict(list)
         # websocket -> dict with id and name
         self.user_map: dict[WebSocket, dict] = {}
+        # room_id -> user_id (Admin)
+        self.room_admins: dict[str, str] = {}
+        # room_id -> set of user_ids (allowed to draw)
+        self.room_drawers: dict[str, set[str]] = defaultdict(set)
 
     async def connect(self, websocket: WebSocket, room_id: str, user_id: str, user_name: str = "Anonymous") -> None:
         await websocket.accept()
+        
+        is_first_user = len(self.active_connections[room_id]) == 0
+        
         self.active_connections[room_id].append(websocket)
         self.user_map[websocket] = {"id": user_id, "name": user_name}
+        
+        if is_first_user:
+            self.room_admins[room_id] = user_id
+            self.room_drawers[room_id].add(user_id)
+            
         logger.info(f"[WS] User {user_name} ({user_id}) connected to room {room_id}")
 
         count = len(self.active_connections[room_id])
         users = self.get_room_users(room_id)
+        admin_id = self.room_admins.get(room_id, "")
+        allowed = list(self.room_drawers.get(room_id, set()))
         
         # Send current room info to the newly joined user
         await self.send_personal(
             websocket,
-            {"type": "room_info", "user_count": count, "users": users}
+            {"type": "room_info", "user_count": count, "users": users, "admin_id": admin_id, "allowed_drawers": allowed}
         )
 
         # Notify others
         await self.broadcast_to_room(
             room_id=room_id,
-            message={"type": "user_joined", "user_id": user_id, "user_name": user_name, "user_count": count, "users": users},
+            message={"type": "user_joined", "user_id": user_id, "user_name": user_name, "user_count": count, "users": users, "admin_id": admin_id, "allowed_drawers": allowed},
             exclude=websocket,
         )
 
@@ -50,6 +64,8 @@ class ConnectionManager:
             self.active_connections[room_id].remove(websocket)
         if not self.active_connections[room_id]:
             del self.active_connections[room_id]
+            self.room_admins.pop(room_id, None)
+            self.room_drawers.pop(room_id, None)
         logger.info(f"[WS] User {user_id} disconnected from room {room_id}")
 
     async def send_personal(self, websocket: WebSocket, message: dict[str, Any]) -> None:

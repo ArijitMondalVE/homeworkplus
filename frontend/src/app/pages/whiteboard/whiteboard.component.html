@@ -3,56 +3,55 @@
   <div class="wb-toolbar glass-card">
     <!-- Tools -->
     <div class="tool-group">
-      <button class="tool-btn" [class.active]="activeTool === 'select'" (click)="setTool('select')" data-tooltip="Select"><span class="material-symbols-rounded">mouse</span></button>
-      <button class="tool-btn" [class.active]="activeTool === 'pen'" (click)="setTool('pen')" data-tooltip="Pen"><span class="material-symbols-rounded">edit</span></button>
-      <button class="tool-btn" [class.active]="activeTool === 'highlighter'" (click)="setTool('highlighter')" data-tooltip="Highlight"><span class="material-symbols-rounded">ink_highlighter</span></button>
-      <button class="tool-btn" [class.active]="activeTool === 'eraser'" (click)="setTool('eraser')" data-tooltip="Eraser"><span class="material-symbols-rounded">ink_eraser</span></button>
-      <button class="tool-btn" [class.active]="activeTool === 'text'" (click)="setTool('text')" data-tooltip="Text"><span class="material-symbols-rounded">title</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'select'" (click)="setTool('select')" [disabled]="!isDrawer" data-tooltip="Select"><span class="material-symbols-rounded">mouse</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'pen'" (click)="setTool('pen')" [disabled]="!isDrawer" data-tooltip="Pen"><span class="material-symbols-rounded">edit</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'highlighter'" (click)="setTool('highlighter')" [disabled]="!isDrawer" data-tooltip="Highlight"><span class="material-symbols-rounded">ink_highlighter</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'eraser'" (click)="setTool('eraser')" [disabled]="!isDrawer" data-tooltip="Eraser"><span class="material-symbols-rounded">ink_eraser</span></button>
+      <button class="tool-btn" [class.active]="activeTool === 'text'" (click)="setTool('text')" [disabled]="!isDrawer" data-tooltip="Text"><span class="material-symbols-rounded">title</span></button>
     </div>
 
     <div class="separator"></div>
 
     <!-- Shapes -->
     <div class="tool-group">
-      <button class="tool-btn" (click)="addShape('rect')" data-tooltip="Rectangle"><span class="material-symbols-rounded">rectangle</span></button>
-      <button class="tool-btn" (click)="addShape('circle')" data-tooltip="Circle"><span class="material-symbols-rounded">circle</span></button>
-      <button class="tool-btn" (click)="addShape('line')" data-tooltip="Line"><span class="material-symbols-rounded">horizontal_rule</span></button>
-      <button class="tool-btn" (click)="addShape('arrow')" data-tooltip="Arrow"><span class="material-symbols-rounded">arrow_right_alt</span></button>
+      <button class="tool-btn" (click)="addShape('rect')" [disabled]="!isDrawer" data-tooltip="Rectangle"><span class="material-symbols-rounded">rectangle</span></button>
+      <button class="tool-btn" (click)="addShape('circle')" [disabled]="!isDrawer" data-tooltip="Circle"><span class="material-symbols-rounded">circle</span></button>
+      <button class="tool-btn" (click)="addShape('line')" [disabled]="!isDrawer" data-tooltip="Line"><span class="material-symbols-rounded">horizontal_rule</span></button>
+      <button class="tool-btn" (click)="addShape('arrow')" [disabled]="!isDrawer" data-tooltip="Arrow"><span class="material-symbols-rounded">arrow_right_alt</span></button>
     </div>
 
     <div class="separator"></div>
 
-    <!-- Color Picker -->
-    <div class="color-palette">
-      @for (color of colors; track color) {
-        <button
-          class="color-dot"
-          [style.background]="color"
-          [class.active]="activeColor === color"
-          (click)="activeColor = color; applyColor()"
-        ></button>
-      }
-      <input type="color" class="custom-color" [(ngModel)]="activeColor" (change)="applyColor()" title="Custom color" />
-    </div>
-
-    <div class="separator"></div>
-
-    <!-- Stroke Width -->
-    <div class="stroke-control">
-      <span class="stroke-label">Size</span>
-      <input type="range" min="1" max="20" [(ngModel)]="strokeWidth" (input)="applyStrokeWidth()" class="stroke-slider" />
-      <span class="stroke-value">{{ strokeWidth }}</span>
+    <!-- Properties -->
+    <div class="tool-group">
+      <div class="color-palette">
+        @for (color of colors; track color) {
+          <button
+            class="color-dot"
+            [style.background]="color"
+            [class.active]="activeColor === color"
+            (click)="activeColor = color; applyColor()"
+            [disabled]="!isDrawer"
+          ></button>
+        }
+        <input type="color" class="custom-color" [(ngModel)]="activeColor" (change)="applyColor()" [disabled]="!isDrawer" title="Custom color" />
+      </div>
+      <div class="separator-vert"></div>
+      <div class="stroke-control">
+        <input type="range" min="1" max="20" [(ngModel)]="strokeWidth" (input)="applyStrokeWidth()" [disabled]="!isDrawer" class="stroke-slider" />
+        <span class="stroke-value">{{ strokeWidth }}</span>
+      </div>
     </div>
 
     <div class="separator"></div>
 
     <!-- Actions -->
     <div class="tool-group">
-      <button class="tool-btn" (click)="undo()" data-tooltip="Undo"><span class="material-symbols-rounded">undo</span></button>
-      <button class="tool-btn" (click)="redo()" data-tooltip="Redo"><span class="material-symbols-rounded">redo</span></button>
-      <button class="tool-btn" (click)="clearCanvas()" data-tooltip="Clear"><span class="material-symbols-rounded">delete</span></button>
+      <button class="tool-btn" (click)="undo()" [disabled]="!isDrawer" data-tooltip="Undo"><span class="material-symbols-rounded">undo</span></button>
+      <button class="tool-btn" (click)="redo()" [disabled]="!isDrawer" data-tooltip="Redo"><span class="material-symbols-rounded">redo</span></button>
+      <button class="tool-btn" (click)="clearCanvas()" [disabled]="!isDrawer" data-tooltip="Clear"><span class="material-symbols-rounded">delete</span></button>
       <button class="tool-btn" (click)="saveCanvas()" data-tooltip="Save PNG"><span class="material-symbols-rounded">save</span></button>
-      <button class="tool-btn solve-ai-btn" (click)="solveWithAI()" [disabled]="isSolving" data-tooltip="Solve with AI">
+      <button class="tool-btn solve-ai-btn" (click)="solveWithAI()" [disabled]="isSolving || !isDrawer" data-tooltip="Solve with AI">
         <span class="material-symbols-rounded" [class.spinning]="isSolving">{{ isSolving ? 'sync' : 'psychology' }}</span>
       </button>
     </div>
@@ -72,27 +71,30 @@
       <button class="tool-btn" (click)="joinRoom()" data-tooltip="Join Room"><span class="material-symbols-rounded">login</span></button>
       <button class="tool-btn danger-icon" (click)="leaveRoom()" data-tooltip="Leave Room"><span class="material-symbols-rounded">logout</span></button>
     </div>
-  </div>
 
-  <!-- Canvas Container -->
-  <div class="canvas-wrapper">
-    <canvas #whiteboardCanvas id="whiteboard-canvas"></canvas>
-
-    <!-- Collaborators -->
+    <!-- Collaborators in Toolbar -->
     <div class="collaborators">
       <div class="collab-badge">
         <span class="material-symbols-rounded" style="font-size:16px;">group</span>
         {{ userCount }} {{ userCount === 1 ? 'person' : 'people' }}
       </div>
       <div class="avatar-stack" *ngIf="connectedUsers.length > 0">
-        <div class="collab-avatar" *ngFor="let u of connectedUsers" [attr.data-tooltip]="u.name">
-          {{ (u.name || 'A').charAt(0).toUpperCase() }}
+        <div class="collab-avatar-wrap" *ngFor="let u of connectedUsers" [attr.data-tooltip]="u.name + (u.id === adminId ? ' (Admin)' : '')" (click)="handleAvatarClick(u.id)" [class.clickable]="isAdmin && u.id !== userId">
+          <div class="collab-avatar">{{ (u.name || 'A').charAt(0).toUpperCase() }}</div>
+          <div class="role-badge" *ngIf="u.id === adminId"><span class="material-symbols-rounded">star</span></div>
+          <div class="role-badge drawer-badge" *ngIf="u.id !== adminId && allowedDrawers.has(u.id)"><span class="material-symbols-rounded">draw</span></div>
         </div>
       </div>
-      <div class="collab-avatar" *ngIf="connectedUsers.length === 0" [attr.data-tooltip]="userName + ' (You)'">
-        {{ (userName || 'A').charAt(0).toUpperCase() }}
+      <div class="collab-avatar-wrap" *ngIf="connectedUsers.length === 0" [attr.data-tooltip]="userName + ' (You)'">
+        <div class="collab-avatar">{{ (userName || 'A').charAt(0).toUpperCase() }}</div>
+        <div class="role-badge" *ngIf="isAdmin"><span class="material-symbols-rounded">star</span></div>
       </div>
     </div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div class="canvas-wrapper">
+    <canvas #whiteboardCanvas id="whiteboard-canvas"></canvas>
 
     <!-- Status -->
     <div class="wb-status">

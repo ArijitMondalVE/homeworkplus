@@ -24,13 +24,61 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
             data = await websocket.receive_json()
             msg_type = data.get("type", "unknown")
 
-            if msg_type in ("canvas_update", "cursor_move", "clear", "undo", "add_object"):
+            if msg_type in ("canvas_update", "cursor_move", "clear", "undo", "add_object", "object_added", "object_modified"):
+                # Enforce drawing permissions
+                room_key = f"whiteboard:{room_id}"
+                admin_id = ws_manager.room_admins.get(room_key)
+                allowed_drawers = ws_manager.room_drawers.get(room_key, set())
+                
+                if user_id != admin_id and user_id not in allowed_drawers:
+                    # Silently ignore unauthorized drawing commands
+                    continue
+
                 # Broadcast to all peers in the room
                 await ws_manager.broadcast_to_room(
-                    room_id=f"whiteboard:{room_id}",
+                    room_id=room_key,
                     message={"type": msg_type, "data": data.get("data"), "sender": user_id},
                     exclude=websocket,
                 )
+            
+            elif msg_type == "toggle_access":
+                room_key = f"whiteboard:{room_id}"
+                if user_id == ws_manager.room_admins.get(room_key):
+                    target_id = data.get("target_id")
+                    if target_id in ws_manager.room_drawers[room_key]:
+                        ws_manager.room_drawers[room_key].discard(target_id)
+                    else:
+                        ws_manager.room_drawers[room_key].add(target_id)
+                    
+                    await ws_manager.broadcast_to_room(
+                        room_id=room_key,
+                        message={"type": "permissions_update", "allowed_drawers": list(ws_manager.room_drawers[room_key])}
+                    )
+            
+            elif msg_type == "promote_admin":
+                room_key = f"whiteboard:{room_id}"
+                if user_id == ws_manager.room_admins.get(room_key):
+                    target_id = data.get("target_id")
+                    ws_manager.room_admins[room_key] = target_id
+                    ws_manager.room_drawers[room_key].add(target_id)
+                    
+                    await ws_manager.broadcast_to_room(
+                        room_id=room_key,
+                        message={"type": "admin_promoted", "admin_id": target_id, "allowed_drawers": list(ws_manager.room_drawers[room_key])}
+                    )
+            
+            elif msg_type == "disband_room":
+                room_key = f"whiteboard:{room_id}"
+                if user_id == ws_manager.room_admins.get(room_key):
+                    await ws_manager.broadcast_to_room(
+                        room_id=room_key,
+                        message={"type": "room_disbanded"}
+                    )
+                    # Disconnect all active connections
+                    connections = list(ws_manager.active_connections.get(room_key, []))
+                    for ws in connections:
+                        await ws.close()
+                        ws_manager.disconnect(ws, room_key)
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket, f"whiteboard:{room_id}")
         count = len(ws_manager.active_connections.get(f"whiteboard:{room_id}", []))
