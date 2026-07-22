@@ -10,6 +10,17 @@
   align-items: start;
 }
 
+/* Override glass-card overflow for left panel so history is scrollable and clickable */
+.left-panel.glass-card {
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  gap: 1.5rem;
+  /* Disable the hover transform that creates stacking context issues */
+  transform: none !important;
+}
+
 /* Status */
 .status-display {
   display: flex;
@@ -238,4 +249,244 @@
 
 @media (max-width: 900px) {
   .voice-layout { grid-template-columns: 1fr; }
+}
+
+/* Chat History Section */
+.voice-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.panel-divider {
+  border: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0;
+}
+.chat-history-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  gap: 1rem;
+}
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.history-actions {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.danger-btn {
+  color: rgba(244, 63, 94, 0.7) !important;
+}
+.danger-btn:hover {
+  color: #f43f5e !important;
+  background: rgba(244, 63, 94, 0.1) !important;
+}
+.history-header h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  max-height: 300px;
+  padding-right: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+.history-list::-webkit-scrollbar {
+  width: 4px;
+}
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.history-empty {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 1rem 0;
+}
+.history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  pointer-events: all;
+  position: relative;
+  z-index: 2;
+}
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.history-item.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+.history-icon {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+.history-item.active .history-icon {
+  color: var(--primary-light);
+}
+.history-details {
+  flex: 1;
+  overflow: hidden;
+}
+.history-title {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 0 0.25rem 0;
+  pointer-events: none;
+}
+.history-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+  pointer-events: none;
+}
+.history-icon {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  pointer-events: none;
+}
+
+/* Per-item delete button — hidden until hover */
+.history-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(148, 163, 184, 0.4);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  pointer-events: all;
+  z-index: 3;
+}
+.history-item:hover .history-delete-btn {
+  opacity: 1;
+}
+.history-delete-btn:hover {
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.1);
+}
+
+/* ── Confirmation Modal ──────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 20, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-dialog {
+  background: rgba(15, 32, 64, 0.9);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: 20px;
+  padding: 2rem 2rem 1.75rem;
+  max-width: 400px;
+  width: calc(100% - 3rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  box-shadow: 0 0 60px rgba(244, 63, 94, 0.15), 0 20px 60px rgba(0, 0, 0, 0.6);
+  animation: slideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f43f5e;
+  font-size: 28px;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f0f4ff;
+  margin: 0;
+}
+
+.modal-message {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.modal-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+.modal-confirm-btn {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(244, 63, 94, 0.35);
+  border: none;
+}
+
+.modal-confirm-btn:hover {
+  box-shadow: 0 6px 20px rgba(244, 63, 94, 0.55);
+  transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }

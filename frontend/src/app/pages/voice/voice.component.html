@@ -6,71 +6,109 @@
     </div>
 
     <div class="voice-layout">
-      <!-- Left: Voice Controls -->
-      <div class="voice-controls glass-card animate-fade-in">
-        <!-- Status Display -->
-        <div class="status-display" [class]="'status-' + voiceStatus()">
-          <div class="status-orb" [class.pulsing]="isRecording()">
-            <div class="orb-inner"><span class="material-symbols-rounded">{{ getStatusIcon() }}</span></div>
+      <!-- Left: Voice Controls & History -->
+      <div class="left-panel glass-card animate-fade-in">
+        <div class="voice-controls">
+          <!-- Status Display -->
+          <div class="status-display" [class]="'status-' + voiceStatus()">
+            <div class="status-orb" [class.pulsing]="isRecording()">
+              <div class="orb-inner"><span class="material-symbols-rounded">{{ getStatusIcon() }}</span></div>
+            </div>
+            <div class="status-text">
+              <h3>{{ getStatusTitle() }}</h3>
+              <p>{{ getStatusDesc() }}</p>
+            </div>
           </div>
-          <div class="status-text">
-            <h3>{{ getStatusTitle() }}</h3>
-            <p>{{ getStatusDesc() }}</p>
+
+          <!-- Mic Visualizer -->
+          <div class="mic-visualizer" [class.active]="isRecording()">
+            @for (bar of audioBars; track $index) {
+              <div class="audio-bar" [style.height.px]="isRecording() ? bar : 8"></div>
+            }
+          </div>
+
+          <!-- Record Button -->
+          <button
+            class="record-btn"
+            [class.recording]="isRecording()"
+            [class.processing]="isProcessing()"
+            (click)="toggleRecording()"
+            [disabled]="isProcessing()"
+          >
+            @if (isRecording()) {
+              <span class="btn-icon-large material-symbols-rounded">stop_circle</span>
+              <span>Stop Recording</span>
+            } @else if (isProcessing()) {
+              <span class="spinner"></span>
+              <span>Processing...</span>
+            } @else {
+              <span class="btn-icon-large material-symbols-rounded">mic</span>
+              <span>Start Speaking</span>
+            }
+          </button>
+
+          <!-- Language -->
+          <div class="voice-options">
+            <label class="form-label">Language</label>
+            <select class="form-input" [(ngModel)]="selectedLanguage">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="hi">Hindi</option>
+              <option value="zh">Chinese</option>
+              <option value="de">German</option>
+            </select>
+          </div>
+
+          <!-- Text Input Fallback -->
+          <div class="text-fallback">
+            <p class="fallback-label">Or type your question:</p>
+            <div class="text-input-row">
+              <input
+                type="text"
+                class="form-input"
+                placeholder="Ask anything..."
+                [(ngModel)]="textInput"
+                (keyup.enter)="sendTextMessage()"
+              />
+              <button class="btn btn-primary btn-sm" (click)="sendTextMessage()" [disabled]="!textInput.trim() || isProcessing()">Send</button>
+            </div>
           </div>
         </div>
-
-        <!-- Mic Visualizer -->
-        <div class="mic-visualizer" [class.active]="isRecording()">
-          @for (bar of audioBars; track $index) {
-            <div class="audio-bar" [style.height.px]="isRecording() ? bar : 8"></div>
-          }
-        </div>
-
-        <!-- Record Button -->
-        <button
-          class="record-btn"
-          [class.recording]="isRecording()"
-          [class.processing]="isProcessing()"
-          (click)="toggleRecording()"
-          [disabled]="isProcessing()"
-        >
-          @if (isRecording()) {
-            <span class="btn-icon-large material-symbols-rounded">stop_circle</span>
-            <span>Stop Recording</span>
-          } @else if (isProcessing()) {
-            <span class="spinner"></span>
-            <span>Processing...</span>
-          } @else {
-            <span class="btn-icon-large material-symbols-rounded">mic</span>
-            <span>Start Speaking</span>
-          }
-        </button>
-
-        <!-- Language -->
-        <div class="voice-options">
-          <label class="form-label">Language</label>
-          <select class="form-input" [(ngModel)]="selectedLanguage">
-            <option value="en">English</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-            <option value="hi">Hindi</option>
-            <option value="zh">Chinese</option>
-            <option value="de">German</option>
-          </select>
-        </div>
-
-        <!-- Text Input Fallback -->
-        <div class="text-fallback">
-          <p class="fallback-label">Or type your question:</p>
-          <div class="text-input-row">
-            <input
-              type="text"
-              class="form-input"
-              placeholder="Ask anything..."
-              [(ngModel)]="textInput"
-              (keyup.enter)="sendTextMessage()"
-            />
-            <button class="btn btn-primary btn-sm" (click)="sendTextMessage()" [disabled]="!textInput.trim() || isProcessing()">Send</button>
+        
+        <hr class="panel-divider" />
+        
+        <!-- Recent Chats History -->
+        <div class="chat-history-section">
+          <div class="history-header">
+            <h3><span class="material-symbols-rounded" style="font-size: 20px; vertical-align: bottom;">history</span> Recent Chats</h3>
+            <div class="history-actions">
+              <button class="btn btn-ghost btn-sm" (click)="createNewChat()" title="New chat">
+                <span class="material-symbols-rounded" style="font-size: 16px;">add</span>
+              </button>
+              @if (chatHistoryList().length > 0) {
+                <button class="btn btn-ghost btn-sm danger-btn" (click)="clearAllHistory()" title="Clear all history">
+                  <span class="material-symbols-rounded" style="font-size: 16px;">delete_sweep</span>
+                </button>
+              }
+            </div>
+          </div>
+          <div class="history-list">
+            @if (chatHistoryList().length === 0) {
+              <p class="history-empty">No previous chats yet.</p>
+            }
+            @for (session of chatHistoryList(); track session.session_id) {
+              <div class="history-item" [class.active]="session.session_id === sessionId" (click)="loadChatSession(session.session_id)">
+                <span class="material-symbols-rounded history-icon">chat_bubble_outline</span>
+                <div class="history-details">
+                  <p class="history-title">{{ session.title }}</p>
+                  <p class="history-date">{{ session.updated_at | date:'short' }}</p>
+                </div>
+                <button class="history-delete-btn" (click)="deleteSession($event, session.session_id)" title="Delete this chat">
+                  <span class="material-symbols-rounded" style="font-size: 16px;">close</span>
+                </button>
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -132,3 +170,23 @@
     </div>
   </div>
 </div>
+
+<!-- ── Confirmation Modal ──────────────────────────────────────────────── -->
+@if (showConfirmModal()) {
+  <div class="modal-backdrop" (click)="dismissModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-icon">
+        <span class="material-symbols-rounded">warning</span>
+      </div>
+      <h3 class="modal-title">{{ confirmModalTitle() }}</h3>
+      <p class="modal-message">{{ confirmModalMessage() }}</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="dismissModal()">Cancel</button>
+        <button class="btn modal-confirm-btn" (click)="confirmAction()">
+          <span class="material-symbols-rounded" style="font-size:18px;">delete</span>
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+}

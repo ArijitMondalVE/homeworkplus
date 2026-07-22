@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
@@ -366,3 +366,105 @@ async def submit_answer_feedback(
     await db.commit()
 
     return {"message": "Feedback recorded. Thank you!"}
+
+
+@router.get("/chat/history", status_code=status.HTTP_200_OK)
+async def get_chat_history_list(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get list of past chat sessions for the current user."""
+    query = (
+        select(
+            ChatHistory.session_id,
+            func.max(ChatHistory.created_at).label("updated_at"),
+        )
+        .where(ChatHistory.user_id == current_user.id)
+        .group_by(ChatHistory.session_id)
+        .order_by(func.max(ChatHistory.created_at).desc())
+    )
+    result = await db.execute(query)
+    sessions = result.all()
+    
+    history_list = []
+    for row in sessions:
+        title_query = await db.execute(
+            select(ChatHistory.content)
+            .where(
+                ChatHistory.session_id == row.session_id,
+                ChatHistory.role == "user"
+            )
+            .order_by(ChatHistory.created_at.asc())
+            .limit(1)
+        )
+        title = title_query.scalar_one_or_none() or "New Conversation"
+        if len(title) > 40:
+            title = title[:37] + "..."
+            
+        history_list.append({
+            "session_id": row.session_id,
+            "title": title,
+            "updated_at": row.updated_at
+        })
+        
+    return history_list
+
+
+@router.get("/chat/history/{session_id}", status_code=status.HTTP_200_OK)
+async def get_chat_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all messages for a specific chat session."""
+    from sqlalchemy import delete as sql_delete
+    query = (
+        select(ChatHistory)
+        .where(
+            ChatHistory.user_id == current_user.id,
+            ChatHistory.session_id == session_id
+        )
+        .order_by(ChatHistory.created_at.asc())
+    )
+    result = await db.execute(query)
+    messages = result.scalars().all()
+    
+    if not messages:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    return [
+        {"role": m.role, "content": m.content}
+        for m in messages
+    ]
+
+
+@router.delete("/chat/history/{session_id}", status_code=status.HTTP_200_OK)
+async def delete_chat_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete all messages in a specific chat session."""
+    from sqlalchemy import delete as sql_delete
+    result = await db.execute(
+        sql_delete(ChatHistory).where(
+            ChatHistory.user_id == current_user.id,
+            ChatHistory.session_id == session_id,
+        )
+    )
+    await db.commit()
+    return {"message": "Session deleted", "rows_deleted": result.rowcount}
+
+
+@router.delete("/chat/history", status_code=status.HTTP_200_OK)
+async def clear_all_chat_history(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete all chat history for the current user."""
+    from sqlalchemy import delete as sql_delete
+    result = await db.execute(
+        sql_delete(ChatHistory).where(ChatHistory.user_id == current_user.id)
+    )
+    await db.commit()
+    return {"message": "All history cleared", "rows_deleted": result.rowcount}

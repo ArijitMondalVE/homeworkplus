@@ -28,6 +28,12 @@ export interface ChatResponse {
   tokens_used: number;
 }
 
+export interface ChatHistorySummary {
+  session_id: string;
+  title: string;
+  updated_at: string;
+}
+
 export interface DashboardStats {
   user: {
     id: string;
@@ -111,6 +117,22 @@ export class AiService {
       session_id: sessionId,
       language,
     });
+  }
+
+  getChatHistoryList(): Observable<ChatHistorySummary[]> {
+    return this.http.get<ChatHistorySummary[]>(`${this.API}/ai/chat/history`);
+  }
+
+  getChatSession(sessionId: string): Observable<ChatMessage[]> {
+    return this.http.get<ChatMessage[]>(`${this.API}/ai/chat/history/${sessionId}`);
+  }
+
+  deleteChatSession(sessionId: string): Observable<any> {
+    return this.http.delete(`${this.API}/ai/chat/history/${sessionId}`);
+  }
+
+  clearAllChatHistory(): Observable<any> {
+    return this.http.delete(`${this.API}/ai/chat/history`);
   }
 
   submitFeedback(

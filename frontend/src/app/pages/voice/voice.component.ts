@@ -1,7 +1,7 @@
-import { Component, signal, inject, OnDestroy } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AiService, ChatMessage } from '../../services/ai.service';
+import { AiService, ChatMessage, ChatHistorySummary } from '../../services/ai.service';
 
 @Component({
   selector: 'app-voice',
@@ -10,7 +10,7 @@ import { AiService, ChatMessage } from '../../services/ai.service';
   templateUrl: './voice.component.html',
   styleUrls: ['./voice.component.css'],
 })
-export class VoiceComponent implements OnDestroy {
+export class VoiceComponent implements OnInit, OnDestroy {
   private aiService = inject(AiService);
 
   voiceStatus = signal<'idle' | 'recording' | 'processing' | 'done'>('idle');
@@ -22,6 +22,14 @@ export class VoiceComponent implements OnDestroy {
   selectedLanguage = 'en';
   textInput = '';
   sessionId = `voice-${Date.now()}`;
+  
+  chatHistoryList = signal<ChatHistorySummary[]>([]);
+
+  // Confirmation modal state
+  showConfirmModal = signal(false);
+  confirmModalTitle = signal('');
+  confirmModalMessage = signal('');
+  private pendingConfirmAction: (() => void) | null = null;
 
   audioBars = Array.from({ length: 20 }, () => 8);
   private barInterval: ReturnType<typeof setInterval> | null = null;
@@ -34,6 +42,88 @@ export class VoiceComponent implements OnDestroy {
     'How does photosynthesis work?',
     'What is the Pythagorean theorem?',
   ];
+
+  ngOnInit(): void {
+    this.loadHistoryList();
+  }
+
+  loadHistoryList(): void {
+    this.aiService.getChatHistoryList().subscribe({
+      next: (list) => this.chatHistoryList.set(list),
+      error: (err) => console.error('Failed to load history', err)
+    });
+  }
+
+  loadChatSession(id: string): void {
+    console.log('Loading session:', id);
+    this.isProcessing.set(true);
+    this.sessionId = id;
+    this.aiService.getChatSession(id).subscribe({
+      next: (msgs) => {
+        console.log('Received msgs:', msgs);
+        this.messages.set(msgs);
+        this.isProcessing.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load chat', err);
+        this.isProcessing.set(false);
+      }
+    });
+  }
+
+  createNewChat(): void {
+    this.clearConversation();
+  }
+
+  deleteSession(event: Event, sessionId: string): void {
+    event.stopPropagation();
+    this.openConfirmModal(
+      'Delete Chat',
+      'Are you sure you want to delete this conversation? This cannot be undone.',
+      () => {
+        this.aiService.deleteChatSession(sessionId).subscribe({
+          next: () => {
+            if (this.sessionId === sessionId) this.clearConversation();
+            this.loadHistoryList();
+          },
+          error: (err) => console.error('Failed to delete session', err)
+        });
+      }
+    );
+  }
+
+  clearAllHistory(): void {
+    this.openConfirmModal(
+      'Clear All History',
+      'Are you sure you want to delete ALL your chat history? This action is permanent and cannot be undone.',
+      () => {
+        this.aiService.clearAllChatHistory().subscribe({
+          next: () => {
+            this.clearConversation();
+            this.chatHistoryList.set([]);
+          },
+          error: (err) => console.error('Failed to clear history', err)
+        });
+      }
+    );
+  }
+
+  openConfirmModal(title: string, message: string, action: () => void): void {
+    this.confirmModalTitle.set(title);
+    this.confirmModalMessage.set(message);
+    this.pendingConfirmAction = action;
+    this.showConfirmModal.set(true);
+  }
+
+  confirmAction(): void {
+    if (this.pendingConfirmAction) this.pendingConfirmAction();
+    this.dismissModal();
+  }
+
+  dismissModal(): void {
+    this.showConfirmModal.set(false);
+    this.pendingConfirmAction = null;
+  }
 
   async toggleRecording(): Promise<void> {
     if (this.isRecording()) {
@@ -118,6 +208,7 @@ export class VoiceComponent implements OnDestroy {
           this.isProcessing.set(false);
           this.voiceStatus.set('done');
           setTimeout(() => this.voiceStatus.set('idle'), 3000);
+          this.loadHistoryList(); // refresh history list
         },
         error: () => {
           this.addMessage(

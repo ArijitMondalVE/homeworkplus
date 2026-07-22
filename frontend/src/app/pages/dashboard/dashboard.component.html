@@ -159,20 +159,21 @@
   </div>
 </div>
 
-<!-- Custom Confirmation Modal -->
+<!-- ── Confirmation Modal ──────────────────────────────────────────────── -->
 @if (showConfirmModal()) {
   <div class="modal-backdrop animate-fade-in" (click)="cancelClear()">
-    <div class="modal-card glass-card animate-zoom-in" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <div class="warning-icon-wrapper">⚠️</div>
-        <h2>Clear Activity History?</h2>
+    <div class="modal-dialog animate-zoom-in" (click)="$event.stopPropagation()">
+      <div class="modal-icon">
+        <span class="material-symbols-rounded">warning</span>
       </div>
-      <div class="modal-body">
-        <p>This will permanently delete all your recent scanned questions and solutions. This action cannot be undone.</p>
-      </div>
-      <div class="modal-footer">
+      <h3 class="modal-title">Clear Activity History?</h3>
+      <p class="modal-message">This will permanently delete all your recent scanned questions and solutions. This action cannot be undone.</p>
+      <div class="modal-actions">
         <button class="btn btn-secondary" (click)="cancelClear()">Cancel</button>
-        <button class="btn btn-danger" (click)="clearRecentActivity()">Yes, Clear History</button>
+        <button class="btn modal-confirm-btn" (click)="clearRecentActivity()">
+          <span class="material-symbols-rounded" style="font-size:18px;">delete_sweep</span>
+          Clear All
+        </button>
       </div>
     </div>
   </div>

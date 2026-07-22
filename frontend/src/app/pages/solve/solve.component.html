@@ -255,5 +255,53 @@
         }
       </div>
     </div>
+
+    <!-- ── Solve History ───────────────────────────────────────────────── -->
+    @if (recentHistory().length > 0) {
+      <div class="solve-history glass-card animate-fade-in">
+        <div class="history-hdr">
+          <h3><span class="material-symbols-rounded">history</span> Recent Questions</h3>
+          <button class="btn btn-ghost btn-sm danger-btn" (click)="confirmClearHistory()" title="Clear all history">
+            <span class="material-symbols-rounded" style="font-size:16px;">delete_sweep</span> Clear
+          </button>
+        </div>
+        <div class="solve-history-list">
+          @for (q of recentHistory(); track q.id) {
+            <div class="solve-history-item" (click)="reuseQuestion(q)">
+              <div class="shi-icon">
+                <span class="material-symbols-rounded" style="font-size:18px;">{{ getTypeIcon(q.question_type) }}</span>
+              </div>
+              <div class="shi-details">
+                <p class="shi-content">{{ q.content }}</p>
+                <p class="shi-meta">{{ q.created_at | date:'MMM d, h:mm a' }}
+                  @if (q.is_solved) { <span class="shi-solved"><span class="material-symbols-rounded" style="font-size:12px;">check_circle</span> Solved</span> }
+                </p>
+              </div>
+              <span class="material-symbols-rounded shi-arrow">arrow_forward_ios</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
   </div>
 </div>
+
+<!-- ── Confirmation Modal ──────────────────────────────────────────────── -->
+@if (showConfirmModal()) {
+  <div class="modal-backdrop" (click)="cancelClearHistory()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-icon">
+        <span class="material-symbols-rounded">warning</span>
+      </div>
+      <h3 class="modal-title">Clear Question History?</h3>
+      <p class="modal-message">This will permanently delete all your recent scanned and typed questions. This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" (click)="cancelClearHistory()">Cancel</button>
+        <button class="btn modal-confirm-btn" (click)="clearHistory()">
+          <span class="material-symbols-rounded" style="font-size:18px;">delete_sweep</span>
+          Clear All
+        </button>
+      </div>
+    </div>
+  </div>
+}

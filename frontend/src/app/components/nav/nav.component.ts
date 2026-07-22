@@ -11,32 +11,34 @@ import { AuthService } from '../../services/auth.service';
     <nav class="navbar">
       <div class="nav-container">
         <!-- Logo -->
-        <a routerLink="/dashboard" class="nav-logo">
+        <a [routerLink]="auth.currentUser() ? '/dashboard' : '/'" class="nav-logo">
           <span class="logo-icon material-symbols-rounded">menu_book</span>
           <span class="logo-text">Homework<span class="logo-accent">Plus</span></span>
         </a>
 
         <!-- Nav Links -->
-        <div class="nav-links" [class.open]="mobileOpen">
-          <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
-            <span class="material-symbols-rounded">home</span> Dashboard
-          </a>
-          <a routerLink="/solve" routerLinkActive="active" class="nav-link">
-            <span class="material-symbols-rounded">photo_camera</span> Solve
-          </a>
-          <a routerLink="/voice" routerLinkActive="active" class="nav-link">
-            <span class="material-symbols-rounded">mic</span> Voice
-          </a>
-          <a routerLink="/whiteboard" routerLinkActive="active" class="nav-link">
-            <span class="material-symbols-rounded">edit</span> Whiteboard
-          </a>
-          <a routerLink="/map" routerLinkActive="active" class="nav-link">
-            <span class="material-symbols-rounded">explore</span> 3D Map
-          </a>
-          <a routerLink="/subjects" routerLinkActive="active" class="nav-link">
-            <span class="material-symbols-rounded">import_contacts</span> Subjects
-          </a>
-        </div>
+        @if (auth.currentUser()) {
+          <div class="nav-links" [class.open]="mobileOpen">
+            <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+              <span class="material-symbols-rounded">home</span> Dashboard
+            </a>
+            <a routerLink="/solve" routerLinkActive="active" class="nav-link">
+              <span class="material-symbols-rounded">photo_camera</span> Solve
+            </a>
+            <a routerLink="/voice" routerLinkActive="active" class="nav-link">
+              <span class="material-symbols-rounded">mic</span> Voice
+            </a>
+            <a routerLink="/whiteboard" routerLinkActive="active" class="nav-link">
+              <span class="material-symbols-rounded">edit</span> Whiteboard
+            </a>
+            <a routerLink="/map" routerLinkActive="active" class="nav-link">
+              <span class="material-symbols-rounded">explore</span> 3D Map
+            </a>
+            <a routerLink="/subjects" routerLinkActive="active" class="nav-link">
+              <span class="material-symbols-rounded">import_contacts</span> Subjects
+            </a>
+          </div>
+        }
 
         <!-- User Actions -->
         <div class="nav-actions">

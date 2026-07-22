@@ -1,4 +1,4 @@
-import { Component, signal, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AiService, PhotoAnswerResponse } from '../../services/ai.service';
@@ -10,7 +10,7 @@ import { AiService, PhotoAnswerResponse } from '../../services/ai.service';
   templateUrl: './solve.component.html',
   styleUrls: ['./solve.component.css']
 })
-export class SolveComponent {
+export class SolveComponent implements OnInit {
   private aiService = inject(AiService);
 
   inputMode = signal<'photo' | 'text'>('photo');
@@ -28,6 +28,10 @@ export class SolveComponent {
 
   imageId: string | null = null;
 
+  // Solve History
+  recentHistory = signal<any[]>([]);
+  showConfirmModal = signal(false);
+
   pipelineSteps = [
     { label: 'Vision Enhancement', icon: 'visibility', done: false, active: false },
     { label: 'OCR Extraction', icon: 'edit_document', done: false, active: false },
@@ -35,6 +39,43 @@ export class SolveComponent {
     { label: 'RAG Knowledge Search', icon: 'menu_book', done: false, active: false },
     { label: 'LLM Answer Generation', icon: 'smart_toy', done: false, active: false },
   ];
+
+  ngOnInit(): void {
+    this.loadHistory();
+  }
+
+  loadHistory(): void {
+    this.aiService.getDashboardStats().subscribe({
+      next: (data) => this.recentHistory.set(data.recent_questions ?? []),
+      error: () => {}
+    });
+  }
+
+  confirmClearHistory(): void { this.showConfirmModal.set(true); }
+  cancelClearHistory(): void  { this.showConfirmModal.set(false); }
+
+  clearHistory(): void {
+    this.showConfirmModal.set(false);
+    this.aiService.clearRecentQuestions().subscribe({
+      next: () => this.recentHistory.set([]),
+      error: (err) => console.error(err)
+    });
+  }
+
+  reuseQuestion(q: any): void {
+    this.textQuestion = q.content;
+    this.inputMode.set('text');
+    // scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  getTypeIcon(type: string): string {
+    const map: Record<string, string> = {
+      math: 'calculate', physics: 'bolt', chemistry: 'science',
+      calculus: 'functions', biology: 'biotech', general: 'menu_book',
+    };
+    return map[type] ?? 'menu_book';
+  }
 
   onDragOver(e: DragEvent): void {
     e.preventDefault();
