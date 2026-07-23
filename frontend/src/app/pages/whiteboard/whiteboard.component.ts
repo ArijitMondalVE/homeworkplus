@@ -65,6 +65,9 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const user = this.auth.currentUser();
     if (user) {
       this.userName = user.full_name || 'Anonymous';
+      this.userId = user.id || 'anonymous';
+    } else {
+      this.userId = 'anonymous';
     }
 
     this.route.paramMap.subscribe(params => {
@@ -88,7 +91,9 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.initCanvas();
+    setTimeout(() => {
+      this.initCanvas();
+    }, 0);
   }
 
   async initCanvas(): Promise<void> {
@@ -136,7 +141,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         if (now - lastMoveTime > 30) { // Throttle to ~30 FPS max
           lastMoveTime = now;
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            const pointer = this.canvas.getPointer(o.e);
+            const pointer = this.canvas.getScenePoint ? this.canvas.getScenePoint(o.e) : (o.scenePoint || { x: o.e.clientX, y: o.e.clientY });
             this.ws.send(JSON.stringify({ type: 'cursor_move', data: { x: pointer.x, y: pointer.y } }));
           }
         }
@@ -149,8 +154,6 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private connectWebSocket(): void {
-    const user = this.auth.currentUser();
-    this.userId = user?.id || 'anonymous';
     const encodedName = encodeURIComponent(this.userName);
 
     this.ws = new WebSocket(`${environment.wsUrl}/ws/whiteboard/${this.roomId}?user_id=${this.userId}&user_name=${encodedName}`);
