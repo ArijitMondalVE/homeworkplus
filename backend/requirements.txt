@@ -39,3 +39,4 @@ loguru>=0.7.2
 tenacity>=9.0.0
 rich>=13.8.0
 # psycopg2>=2.9.12
+fakeredis>=2.20.0
