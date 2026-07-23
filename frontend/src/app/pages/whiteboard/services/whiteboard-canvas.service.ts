@@ -50,10 +50,12 @@ export class WhiteboardCanvasService implements OnDestroy {
 
   private pushOperation(op: CanvasOperation) {
     if (this.isUndoingRedoing || this.isReceivingSync) return;
-    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.splice(this.historyIndex + 1);
     this.history.push(op);
-    if (this.history.length > 50) this.history.shift();
-    else this.historyIndex = this.history.length - 1;
+    if (this.history.length > 50) {
+      this.history.shift();
+    }
+    this.historyIndex = this.history.length - 1;
   }
 
   private setupFabricEvents(): void {
@@ -63,9 +65,13 @@ export class WhiteboardCanvasService implements OnDestroy {
         e.target.id = Math.random().toString(36).substring(2, 9);
       }
       this.strokeCount++;
-      this.pushOperation({ action: 'add', objectJSON: e.target.toJSON(['id']) });
       
-      const payload: any = { type: 'object_added', data: e.target.toJSON(['id']) };
+      const objJSON = e.target.toJSON(['id']);
+      objJSON.id = e.target.id; // Force ID
+
+      this.pushOperation({ action: 'add', objectJSON: objJSON });
+      
+      const payload: any = { type: 'object_added', data: objJSON };
       if (!this.isDrawing && this.currentDrawId) {
         payload.replaces = this.currentDrawId;
       }
@@ -74,10 +80,40 @@ export class WhiteboardCanvasService implements OnDestroy {
 
     this.canvas.on('object:modified', (e: any) => {
       if (this.isReceivingSync || !e.target || (e.target.id && e.target.id.startsWith('temp_'))) return;
-      this.sync.sendMessage({ type: 'object_modified', data: e.target.toJSON(['id']) });
+      const objJSON = e.target.toJSON(['id']);
+      objJSON.id = e.target.id;
+      this.sync.sendMessage({ type: 'object_modified', data: objJSON });
     });
 
     this.canvas.on('mouse:down', (o: any) => {
+      // Handle Text Tool
+      if (this.activeTool === 'text') {
+        const p = this.canvas.getScenePoint ? this.canvas.getScenePoint(o.e) : (o.scenePoint || { x: o.e.clientX, y: o.e.clientY });
+        const text = new fabric.IText('Text', {
+          left: p.x, top: p.y, fill: this.activeColor, fontSize: 24
+        });
+        // @ts-ignore
+        text.id = Math.random().toString(36).substring(2, 9);
+        this.canvas.add(text);
+        this.canvas.setActiveObject(text);
+        this.canvas.renderAll();
+        this.setTool('select');
+        return;
+      }
+
+      // Handle Eraser Tool (click to delete)
+      if (this.activeTool === 'eraser') {
+        if (o.target) {
+          const id = o.target.id;
+          const objJSON = o.target.toJSON(['id']);
+          objJSON.id = id;
+          this.pushOperation({ action: 'remove', objectJSON: objJSON });
+          this.canvas.remove(o.target);
+          this.sync.sendMessage({ type: 'object_removed', data: { id } });
+        }
+        return;
+      }
+
       if (!this.canvas.isDrawingMode) return;
       this.isDrawing = true;
       this.currentDrawId = Math.random().toString(36).substring(2, 9);
@@ -243,14 +279,21 @@ export class WhiteboardCanvasService implements OnDestroy {
     if (tool === 'pen' || tool === 'highlighter') {
       this.canvas.isDrawingMode = true;
       if (!this.canvas.freeDrawingBrush) this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      this.canvas.freeDrawingBrush.color = this.activeColor;
+      
+      let color = this.activeColor;
+      if (tool === 'highlighter' && color.startsWith('#')) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        color = `rgba(${r}, ${g}, ${b}, 0.5)`;
+      }
+      
+      this.canvas.freeDrawingBrush.color = color;
       this.canvas.freeDrawingBrush.width = tool === 'highlighter' ? 12 : this.strokeWidth;
-      if (tool === 'highlighter') this.canvas.freeDrawingBrush.color = this.activeColor + '80';
     } else if (tool === 'eraser') {
-      this.canvas.isDrawingMode = true;
-      if (!this.canvas.freeDrawingBrush) this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      this.canvas.freeDrawingBrush.color = '#ffffff';
-      this.canvas.freeDrawingBrush.width = 20;
+      // Eraser is now click-to-delete
+      this.canvas.isDrawingMode = false;
+      this.canvas.selection = false;
     } else {
       this.canvas.isDrawingMode = false;
     }
@@ -279,15 +322,20 @@ export class WhiteboardCanvasService implements OnDestroy {
   addShape(shape: string): void {
     if (!this.canvas) return;
     this.canvas.isDrawingMode = false;
-    this.activeTool = 'select';
+    this.setTool('select');
 
     let obj: any;
-    const opts = { stroke: this.activeColor, strokeWidth: this.strokeWidth, fill: 'transparent', left: 100, top: 100 };
+    const left = this.canvas.width ? this.canvas.width / 2 : 100;
+    const top = this.canvas.height ? this.canvas.height / 2 : 100;
+    const opts = { stroke: this.activeColor, strokeWidth: this.strokeWidth, fill: 'transparent', left, top, originX: 'center' as const, originY: 'center' as const };
 
     if (shape === 'rect') obj = new fabric.Rect({ ...opts, width: 150, height: 100 });
     else if (shape === 'circle') obj = new fabric.Circle({ ...opts, radius: 60 });
-    else if (shape === 'line') obj = new fabric.Line([50, 50, 200, 200], opts);
-    else if (shape === 'arrow') obj = new fabric.Line([50, 100, 200, 100], { ...opts, strokeWidth: 3 });
+    else if (shape === 'line') obj = new fabric.Line([-75, 0, 75, 0], opts);
+    else if (shape === 'arrow') {
+      // Simple representation of an arrow using a path, or just a thick line for now
+      obj = new fabric.Line([-75, 0, 75, 0], { ...opts, strokeWidth: 3 });
+    }
 
     if (obj) {
       obj.id = Math.random().toString(36).substring(2, 9);
@@ -310,6 +358,7 @@ export class WhiteboardCanvasService implements OnDestroy {
         this.canvas.remove(obj);
         this.isReceivingSync = false;
         this.sync.sendMessage({ type: 'object_removed', data: { id: op.objectJSON.id } });
+        this.canvas.renderAll();
       }
     } else if (op.action === 'remove' && op.objectJSON) {
       // @ts-ignore
@@ -318,10 +367,10 @@ export class WhiteboardCanvasService implements OnDestroy {
         this.canvas.add(objects[0]);
         this.isReceivingSync = false;
         this.sync.sendMessage({ type: 'object_added', data: op.objectJSON });
+        this.canvas.renderAll();
       });
     }
     
-    this.canvas.renderAll();
     this.isUndoingRedoing = false;
   }
 
@@ -338,6 +387,7 @@ export class WhiteboardCanvasService implements OnDestroy {
         this.canvas.add(objects[0]);
         this.isReceivingSync = false;
         this.sync.sendMessage({ type: 'object_added', data: op.objectJSON });
+        this.canvas.renderAll();
       });
     } else if (op.action === 'remove' && op.objectJSON) {
       const obj = this.canvas.getObjects().find((o: any) => o.id === op.objectJSON.id);
@@ -346,10 +396,10 @@ export class WhiteboardCanvasService implements OnDestroy {
         this.canvas.remove(obj);
         this.isReceivingSync = false;
         this.sync.sendMessage({ type: 'object_removed', data: { id: op.objectJSON.id } });
+        this.canvas.renderAll();
       }
     }
 
-    this.canvas.renderAll();
     this.isUndoingRedoing = false;
   }
 

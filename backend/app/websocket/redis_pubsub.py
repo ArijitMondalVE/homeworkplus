@@ -17,7 +17,16 @@ class RedisPubSubManager:
     async def connect(self):
         if self.redis_client:
             return
+        
         self.redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+        
+        try:
+            await self.redis_client.ping()
+        except Exception as e:
+            logger.warning(f"Could not connect to real Redis: {e}. Falling back to in-memory FakeRedis.")
+            import fakeredis.aioredis
+            self.redis_client = fakeredis.aioredis.FakeRedis(decode_responses=True)
+            
         self.pubsub = self.redis_client.pubsub()
         self.listen_task = asyncio.create_task(self._listen())
 
