@@ -245,6 +245,8 @@ export class WhiteboardCanvasService implements OnDestroy {
             }
           }, 3000);
         }
+      } else if (msg.type === 'permissions_update' || msg.type === 'admin_promoted' || msg.type === 'room_info') {
+        this.applyPermissions();
       }
     });
   }
@@ -297,6 +299,8 @@ export class WhiteboardCanvasService implements OnDestroy {
     } else {
       this.canvas.isDrawingMode = false;
     }
+    
+    this.applyPermissions();
   }
 
   applyColor(): void {
