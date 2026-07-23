@@ -25,7 +25,7 @@ export class WhiteboardCanvasService implements OnDestroy {
   
   private isDrawing = false;
   private currentDrawId = '';
-  private remotePaths: { [id: string]: { pathObj: any, pathData: any[] } } = {};
+  private remotePaths: { [id: string]: { pathObj: any, path: any[] } } = {};
   private sub: Subscription | null = null;
 
   constructor(private sync: WhiteboardSyncService) {}
@@ -210,26 +210,38 @@ export class WhiteboardCanvasService implements OnDestroy {
       } else if (msg.type === 'draw_start') {
         if (msg.sender === this.sync.currentUserId) return;
         const { id, x, y, color, width } = msg.data;
-        const pathData: any[] = [['M', x, y]];
-        const pathObj = new fabric.Path(pathData as any, {
-          fill: 'transparent', stroke: color, strokeWidth: width,
-          strokeLineCap: 'round', strokeLineJoin: 'round',
-          selectable: false, evented: false, id: `temp_${id}`
+        const point = { x, y };
+        
+        const path = new fabric.Polyline([point], {
+          fill: '',
+          stroke: color,
+          strokeWidth: width,
+          strokeLineCap: 'round',
+          strokeLineJoin: 'round',
+          selectable: false,
+          evented: false,
+          objectCaching: false
         });
-        this.remotePaths[id] = { pathObj, pathData };
+        
+        // @ts-ignore
+        path.id = `temp_${id}`;
+        this.remotePaths[id] = { pathObj: path, path: [point] };
         this.isReceivingSync = true;
-        this.canvas.add(pathObj);
+        this.canvas.add(path);
         this.isReceivingSync = false;
       } else if (msg.type === 'draw_move') {
         if (msg.sender === this.sync.currentUserId) return;
         const { id, x, y } = msg.data;
+        const point = { x, y };
         if (this.remotePaths[id]) {
-          const { pathObj, pathData } = this.remotePaths[id];
-          pathData.push(['L', x, y]);
+          this.remotePaths[id].path.push(point);
+          this.remotePaths[id].pathObj.set({ points: [...this.remotePaths[id].path] });
+          // @ts-ignore
+          if (this.remotePaths[id].pathObj.setDimensions) this.remotePaths[id].pathObj.setDimensions();
+          
           this.isReceivingSync = true;
-          pathObj.set({ path: pathData as any });
-          this.isReceivingSync = false;
           this.canvas.requestRenderAll();
+          this.isReceivingSync = false;
         }
       } else if (msg.type === 'draw_end') {
         if (msg.sender === this.sync.currentUserId) return;
@@ -333,12 +345,12 @@ export class WhiteboardCanvasService implements OnDestroy {
     const top = this.canvas.height ? this.canvas.height / 2 : 100;
     const opts = { stroke: this.activeColor, strokeWidth: this.strokeWidth, fill: 'transparent', left, top, originX: 'center' as const, originY: 'center' as const };
 
-    if (shape === 'rect') obj = new fabric.Rect({ ...opts, width: 150, height: 100 });
-    else if (shape === 'circle') obj = new fabric.Circle({ ...opts, radius: 60 });
-    else if (shape === 'line') obj = new fabric.Line([-75, 0, 75, 0], opts);
+    if (shape === 'rect') obj = new fabric.Rect({ ...opts, width: 150, height: 100 } as any);
+    else if (shape === 'circle') obj = new fabric.Circle({ ...opts, radius: 60 } as any);
+    else if (shape === 'line') obj = new fabric.Line([-75, 0, 75, 0], opts as any);
     else if (shape === 'arrow') {
       // Simple representation of an arrow using a path, or just a thick line for now
-      obj = new fabric.Line([-75, 0, 75, 0], { ...opts, strokeWidth: 3 });
+      obj = new fabric.Line([-75, 0, 75, 0], { ...opts, strokeWidth: 3 } as any);
     }
 
     if (obj) {

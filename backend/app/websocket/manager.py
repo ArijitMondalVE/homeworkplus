@@ -23,7 +23,9 @@ class ConnectionManager:
         client = redis_pubsub.redis_client
         state_key = f"whiteboard:state:{room_id}"
         users_key = f"whiteboard:users:{room_id}"
+        conn_key = f"whiteboard:conns:{room_id}:{user_id}"
         
+        await client.incr(conn_key)
         await client.hset(users_key, user_id, user_name)
         
         user_count = await client.hlen(users_key)
@@ -96,8 +98,14 @@ class ConnectionManager:
             
         users_key = f"whiteboard:users:{room_id}"
         state_key = f"whiteboard:state:{room_id}"
+        conn_key = f"whiteboard:conns:{room_id}:{user_id}"
         
-        await client.hdel(users_key, user_id)
+        conn_count = await client.decr(conn_key)
+        
+        if conn_count <= 0:
+            await client.hdel(users_key, user_id)
+            await client.delete(conn_key)
+            
         user_count = await client.hlen(users_key)
         
         if user_count == 0:
