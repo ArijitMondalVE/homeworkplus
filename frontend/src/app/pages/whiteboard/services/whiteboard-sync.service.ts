@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, NgZone } from '@angular/core';
 import { Subject } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../services/auth.service';
@@ -31,7 +31,7 @@ export class WhiteboardSyncService implements OnDestroy {
   // Streams for canvas to subscribe to
   public messages$ = new Subject<any>();
 
-  constructor(private auth: AuthService) {}
+  constructor(private auth: AuthService, private zone: NgZone) {}
 
   get currentUserId(): string {
     return this.auth.currentUser()?.id || 'anonymous';
@@ -57,8 +57,10 @@ export class WhiteboardSyncService implements OnDestroy {
     this.ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        this.handleSystemMessage(msg);
-        this.messages$.next(msg);
+        this.zone.run(() => {
+          this.handleSystemMessage(msg);
+          this.messages$.next(msg);
+        });
       } catch (e) {
         console.error('WS parse error:', e);
       }
