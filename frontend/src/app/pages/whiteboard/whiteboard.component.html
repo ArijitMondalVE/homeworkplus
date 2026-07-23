@@ -86,7 +86,7 @@
     <canvas #whiteboardCanvas id="whiteboard-canvas"></canvas>
 
     <!-- Remote Cursors -->
-    <div class="remote-cursor" *ngFor="let cursor of getRemoteCursors()" [style.left.px]="cursor.x" [style.top.px]="cursor.y">
+    <div class="remote-cursor" *ngFor="let cursor of remoteCursors" [style.left.px]="cursor.x" [style.top.px]="cursor.y">
       <span class="material-symbols-rounded cursor-pointer">arrow_selector_tool</span>
       <span class="cursor-name">{{ cursor.name }}</span>
     </div>

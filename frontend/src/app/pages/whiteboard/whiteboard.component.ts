@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
-import * as fabric from 'fabric';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../services/auth.service';
-import { environment } from '../../../environments/environment';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { AiService, PhotoAnswerResponse } from '../../services/ai.service';
+import { WhiteboardSyncService } from './services/whiteboard-sync.service';
+import { WhiteboardCanvasService } from './services/whiteboard-canvas.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-whiteboard',
@@ -17,490 +18,113 @@ import { AiService, PhotoAnswerResponse } from '../../services/ai.service';
 export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('whiteboardCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
 
-  activeTool = 'pen';
-  activeColor = '#1e293b';
-  strokeWidth = 3;
-  strokeCount = 0;
   userName = 'Anonymous';
   roomId = 'main';
-  userId = '';
-  adminId = '';
-  allowedDrawers = new Set<string>();
-  userCount = 1;
-
-  get isAdmin(): boolean {
-    return this.userId === this.adminId;
-  }
-
-  get isDrawer(): boolean {
-    return this.isAdmin || this.allowedDrawers.has(this.userId);
-  }
   
   isSidebarOpen = false;
   activeMenuId: string | null = null;
-  remoteCursors: { [userId: string]: { x: number, y: number, name: string } } = {};
-  
-  connectedUsers: {id: string, name: string}[] = [];
   joinCode = '';
+  
   isSolving = false;
   aiResponse: PhotoAnswerResponse | null = null;
   aiError: string | null = null;
 
   colors = ['#1e293b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#ffffff'];
 
-  private canvas: any = null;
-  private history: string[] = [];
-  private historyIndex = -1;
-  ws: WebSocket | null = null;
-  private isReceivingSync = false;
+  // Template getters/setters mapped to services
+  get isAdmin(): boolean { return this.sync.isAdmin; }
+  get isDrawer(): boolean { return this.sync.isDrawer; }
+  get connectedUsers() { return this.sync.connectedUsers; }
+  get remoteCursors() { return this.sync.getRemoteCursors(); }
+  get userCount() { return this.sync.userCount; }
+  get userId() { return this.sync.currentUserId; }
+  get ws() { return this.sync.ws; }
+  get adminId() { return this.sync.adminId; }
+  get allowedDrawers() { return this.sync.allowedDrawers; }
+  
+  get activeTool() { return this.canvasService.activeTool; }
+  set activeTool(val: string) { this.canvasService.setTool(val); }
+  
+  get activeColor() { return this.canvasService.activeColor; }
+  set activeColor(val: string) { this.canvasService.activeColor = val; this.canvasService.applyColor(); }
+  
+  get strokeWidth() { return this.canvasService.strokeWidth; }
+  set strokeWidth(val: number) { this.canvasService.strokeWidth = val; this.canvasService.applyStrokeWidth(); }
+  
+  get strokeCount() { return this.canvasService.strokeCount; }
 
-  private isDrawing = false;
-  private currentDrawId = '';
-  private remotePaths: { [id: string]: { pathObj: any, pathData: any[] } } = {};
+  private sub: Subscription | null = null;
 
   constructor(
     private auth: AuthService,
     private route: ActivatedRoute,
     private router: Router,
-    private aiService: AiService
+    private aiService: AiService,
+    public sync: WhiteboardSyncService,
+    public canvasService: WhiteboardCanvasService
   ) {}
 
   ngOnInit(): void {
     const user = this.auth.currentUser();
-    if (user) {
-      this.userName = user.full_name || 'Anonymous';
-      this.userId = user.id || 'anonymous';
-    } else {
-      this.userId = 'anonymous';
-    }
+    this.userName = user?.full_name || 'Anonymous';
 
     this.route.paramMap.subscribe(params => {
-      const newRoomId = params.get('roomId') || 'main';
-      const isRoomChange = this.roomId !== newRoomId && this.roomId !== 'main';
-      this.roomId = newRoomId;
-      
-      if (this.canvas) {
-        if (this.ws) {
-          this.ws.close();
-        }
-        this.canvas.clear();
-        this.canvas.backgroundColor = '#ffffff';
-        this.canvas.renderAll();
-        this.history = [];
-        this.historyIndex = -1;
-        this.strokeCount = 0;
-        this.connectWebSocket();
+      this.roomId = params.get('roomId') || 'main';
+      if (this.canvasService.canvas) {
+        this.canvasService.clearCanvas();
+      }
+      this.sync.connect(this.roomId, this.userName);
+    });
+
+    // Listen for room disbanding or kicks
+    this.sub = this.sync.messages$.subscribe(msg => {
+      if (msg.type === 'room_disbanded') {
+        alert("The room admin has disbanded this room.");
+        this.closeAndLeave();
+      } else if (msg.type === 'kicked' && msg.target_id === this.userId) {
+        alert("You have been kicked from the room by the Admin.");
+        this.closeAndLeave();
       }
     });
   }
 
   ngAfterViewInit(): void {
     setTimeout(() => {
-      this.initCanvas();
+      this.canvasService.initCanvas(this.canvasRef.nativeElement);
     }, 0);
   }
 
-  async initCanvas(): Promise<void> {
-    try {
-      const canvasEl = this.canvasRef.nativeElement;
-
-      // Size canvas to container
-      const wrapper = canvasEl.parentElement!;
-      this.canvas = new fabric.Canvas(canvasEl, {
-        width: wrapper.clientWidth,
-        height: wrapper.clientHeight,
-        backgroundColor: '#ffffff',
-        isDrawingMode: true,
-      });
-
-      if (!this.canvas.freeDrawingBrush) {
-        this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      }
-
-      this.setTool('pen');
-      
-      this.canvas.on('object:added', (e: any) => {
-        if (this.isReceivingSync || !e.target || (e.target.id && e.target.id.startsWith('temp_'))) return;
-        if (!e.target.id) {
-          e.target.id = Math.random().toString(36).substring(2, 9);
-        }
-        this.strokeCount++;
-        this.saveHistory();
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          const payload: any = { type: 'object_added', data: e.target.toJSON(['id']) };
-          if (!this.isDrawing && this.currentDrawId) {
-            payload.replaces = this.currentDrawId;
-          }
-          this.ws.send(JSON.stringify(payload));
-        }
-      });
-
-      this.canvas.on('object:modified', (e: any) => {
-        if (this.isReceivingSync || !e.target || (e.target.id && e.target.id.startsWith('temp_'))) return;
-        this.saveHistory();
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({ type: 'object_modified', data: e.target.toJSON(['id']) }));
-        }
-      });
-
-      this.canvas.on('mouse:down', (o: any) => {
-        if (!this.canvas.isDrawingMode) return;
-        this.isDrawing = true;
-        this.currentDrawId = Math.random().toString(36).substring(2, 9);
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          const p = this.canvas.getScenePoint ? this.canvas.getScenePoint(o.e) : (o.scenePoint || { x: o.e.clientX, y: o.e.clientY });
-          const color = this.canvas.freeDrawingBrush.color;
-          const width = this.canvas.freeDrawingBrush.width;
-          this.ws.send(JSON.stringify({
-            type: 'draw_start',
-            data: { id: this.currentDrawId, x: p.x, y: p.y, color, width }
-          }));
-        }
-      });
-
-      let lastMoveTime = 0;
-      this.canvas.on('mouse:move', (o: any) => {
-        const now = Date.now();
-        if (now - lastMoveTime > 16) { // Throttle to ~60 FPS max
-          lastMoveTime = now;
-          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            const pointer = this.canvas.getScenePoint ? this.canvas.getScenePoint(o.e) : (o.scenePoint || { x: o.e.clientX, y: o.e.clientY });
-            this.ws.send(JSON.stringify({ type: 'cursor_move', data: { x: pointer.x, y: pointer.y } }));
-            
-            if (this.isDrawing && this.canvas.isDrawingMode) {
-              this.ws.send(JSON.stringify({
-                type: 'draw_move',
-                data: { id: this.currentDrawId, x: pointer.x, y: pointer.y }
-              }));
-            }
-          }
-        }
-      });
-
-      this.canvas.on('mouse:up', () => {
-        if (!this.isDrawing) return;
-        this.isDrawing = false;
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({
-            type: 'draw_end',
-            data: { id: this.currentDrawId }
-          }));
-        }
-      });
-
-      this.connectWebSocket();
-    } catch (e) {
-      console.warn('Fabric.js not loaded:', e);
-    }
-  }
-
-  private connectWebSocket(): void {
-    const encodedName = encodeURIComponent(this.userName);
-
-    this.ws = new WebSocket(`${environment.wsUrl}/ws/whiteboard/${this.roomId}?user_id=${this.userId}&user_name=${encodedName}`);
-
-    this.ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'canvas_update' && msg.data) {
-          this.isReceivingSync = true;
-          this.canvas.loadFromJSON(msg.data).then(() => {
-            this.canvas.renderAll();
-            this.isReceivingSync = false;
-          }).catch((err: any) => {
-            console.error('Error loading JSON:', err);
-            this.isReceivingSync = false;
-          });
-        } else if (msg.type === 'clear') {
-          this.isReceivingSync = true;
-          this.canvas.clear();
-          this.canvas.backgroundColor = '#ffffff';
-          this.canvas.renderAll();
-          this.strokeCount = 0;
-          this.isReceivingSync = false;
-        } else if (msg.type === 'object_added') {
-          // @ts-ignore
-          fabric.util.enlivenObjects([msg.data]).then((objects: any[]) => {
-            const obj = objects[0];
-            const existing = this.canvas.getObjects().find((o: any) => o.id === obj.id);
-            if (!existing) {
-              this.isReceivingSync = true;
-              
-              if (msg.replaces && this.remotePaths[msg.replaces]) {
-                this.canvas.remove(this.remotePaths[msg.replaces].pathObj);
-                delete this.remotePaths[msg.replaces];
-              }
-              
-              this.canvas.add(obj);
-              this.isReceivingSync = false;
-              this.canvas.renderAll();
-            }
-          }).catch((err: any) => {
-            console.error('Error enlivening object:', err);
-          });
-        } else if (msg.type === 'object_modified') {
-          const targetObj = this.canvas.getObjects().find((o: any) => o.id === msg.data.id);
-          if (targetObj) {
-            const { type, ...updateData } = msg.data;
-            this.isReceivingSync = true;
-            targetObj.set(updateData);
-            targetObj.setCoords();
-            this.isReceivingSync = false;
-            this.canvas.renderAll();
-          }
-        } else if (msg.type === 'draw_start') {
-          if (msg.sender === this.userId) return;
-          const { id, x, y, color, width } = msg.data;
-          const pathData: any[] = [['M', x, y]];
-          const pathObj = new fabric.Path(pathData as any, {
-            fill: 'transparent',
-            stroke: color,
-            strokeWidth: width,
-            strokeLineCap: 'round',
-            strokeLineJoin: 'round',
-            selectable: false,
-            evented: false,
-            id: `temp_${id}`
-          });
-          this.remotePaths[id] = { pathObj, pathData };
-          this.isReceivingSync = true;
-          this.canvas.add(pathObj);
-          this.isReceivingSync = false;
-        } else if (msg.type === 'draw_move') {
-          if (msg.sender === this.userId) return;
-          const { id, x, y } = msg.data;
-          if (this.remotePaths[id]) {
-            const { pathObj, pathData } = this.remotePaths[id];
-            pathData.push(['L', x, y]);
-            this.isReceivingSync = true;
-            pathObj.set({ path: pathData as any });
-            this.isReceivingSync = false;
-            this.canvas.requestRenderAll();
-          }
-        } else if (msg.type === 'draw_end') {
-          if (msg.sender === this.userId) return;
-          const { id } = msg.data;
-          // Note: we do NOT remove the remote path immediately here!
-          // We wait for the 'object_added' event with the 'replaces' field to swap it perfectly.
-          // Fallback cleanup in case 'object_added' fails or never arrives
-          if (this.remotePaths[id]) {
-            setTimeout(() => {
-              if (this.remotePaths[id]) {
-                this.isReceivingSync = true;
-                this.canvas.remove(this.remotePaths[id].pathObj);
-                this.isReceivingSync = false;
-                delete this.remotePaths[id];
-                this.canvas.requestRenderAll();
-              }
-            }, 3000);
-          }
-        } else if (msg.type === 'cursor_move') {
-          if (msg.sender !== this.userId && msg.data) {
-            const senderInfo = this.connectedUsers.find(u => u.id === msg.sender);
-            if (senderInfo) {
-              this.remoteCursors[msg.sender] = { x: msg.data.x, y: msg.data.y, name: senderInfo.name };
-            }
-          }
-        } else if (msg.type === 'room_info' || msg.type === 'user_joined' || msg.type === 'user_left') {
-          if (msg.user_count !== undefined) {
-            this.userCount = msg.user_count;
-          }
-          if (msg.users !== undefined) {
-            this.connectedUsers = msg.users;
-          }
-          if (msg.admin_id !== undefined) {
-            this.adminId = msg.admin_id;
-          }
-          if (msg.allowed_drawers !== undefined) {
-            this.allowedDrawers = new Set(msg.allowed_drawers);
-          }
-          if (msg.type === 'user_left' && msg.user_id) {
-            delete this.remoteCursors[msg.user_id];
-          }
-          this.applyPermissions();
-          // If a new user joined, broadcast our full canvas state to sync them up
-          if (msg.type === 'user_joined' && this.isAdmin) {
-            this.broadcastCanvas();
-          }
-        } else if (msg.type === 'permissions_update') {
-          if (msg.allowed_drawers !== undefined) {
-            this.allowedDrawers = new Set(msg.allowed_drawers);
-          }
-          this.applyPermissions();
-        } else if (msg.type === 'admin_promoted') {
-          if (msg.admin_id !== undefined) {
-            this.adminId = msg.admin_id;
-          }
-          if (msg.allowed_drawers !== undefined) {
-            this.allowedDrawers = new Set(msg.allowed_drawers);
-          }
-          this.applyPermissions();
-        } else if (msg.type === 'room_disbanded') {
-          alert("The room admin has disbanded this room.");
-          this.closeAndLeave();
-        } else if (msg.type === 'kicked') {
-          if (msg.target_id === this.userId) {
-            alert("You have been kicked from the room by the Admin.");
-            this.closeAndLeave();
-          }
-        }
-      } catch (e) {
-        console.error('WS message error:', e);
-        this.isReceivingSync = false;
-      }
-    };
-  }
-
-  private applyPermissions(): void {
-    if (!this.canvas) return;
-    if (this.isDrawer) {
-      if (['pen', 'highlighter', 'eraser'].includes(this.activeTool)) {
-        this.canvas.isDrawingMode = true;
-      }
-      this.canvas.selection = true;
-      this.canvas.forEachObject((obj: any) => {
-        obj.selectable = true;
-        obj.evented = true;
-      });
-    } else {
-      this.canvas.isDrawingMode = false;
-      this.canvas.selection = false;
-      this.canvas.forEachObject((obj: any) => {
-        obj.selectable = false;
-        obj.evented = false;
-      });
-      this.canvas.discardActiveObject();
-    }
-    this.canvas.renderAll();
-  }
-
-  private broadcastCanvas(): void {
-    if (!this.canvas || !this.ws || this.ws.readyState !== WebSocket.OPEN || this.isReceivingSync) return;
-    const json = JSON.stringify(this.canvas.toJSON());
-    this.ws.send(JSON.stringify({ type: 'canvas_update', data: json }));
-  }
-
   setTool(tool: string): void {
-    this.activeTool = tool;
-    if (!this.canvas) return;
-
-    if (tool === 'pen' || tool === 'highlighter') {
-      this.canvas.isDrawingMode = true;
-      if (!this.canvas.freeDrawingBrush) {
-        this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      }
-      this.canvas.freeDrawingBrush.color = this.activeColor;
-      this.canvas.freeDrawingBrush.width = tool === 'highlighter' ? 12 : this.strokeWidth;
-      if (tool === 'highlighter') {
-        this.canvas.freeDrawingBrush.color = this.activeColor + '80'; // 50% opacity
-      }
-    } else if (tool === 'eraser') {
-      this.canvas.isDrawingMode = true;
-      if (!this.canvas.freeDrawingBrush) {
-        this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      }
-      this.canvas.freeDrawingBrush.color = '#ffffff';
-      this.canvas.freeDrawingBrush.width = 20;
-    } else {
-      this.canvas.isDrawingMode = false;
-    }
+    this.canvasService.setTool(tool);
+    this.canvasService.applyPermissions();
   }
 
   applyColor(): void {
-    if (!this.canvas) return;
-    if (this.canvas.isDrawingMode) {
-      if (!this.canvas.freeDrawingBrush) this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      this.canvas.freeDrawingBrush.color = this.activeColor;
-    }
-    const active = this.canvas.getActiveObject();
-    if (active) {
-      active.set('stroke', this.activeColor);
-      this.canvas.renderAll();
-    }
+    this.canvasService.applyColor();
   }
 
   applyStrokeWidth(): void {
-    if (this.canvas?.isDrawingMode) {
-      if (!this.canvas.freeDrawingBrush) this.canvas.freeDrawingBrush = new fabric.PencilBrush(this.canvas);
-      this.canvas.freeDrawingBrush.width = this.strokeWidth;
-    }
+    this.canvasService.applyStrokeWidth();
   }
 
-  async addShape(shape: string): Promise<void> {
-    if (!this.canvas) return;
-    this.canvas.isDrawingMode = false;
-    this.activeTool = 'select';
-
-    try {
-      let obj: any;
-
-      const opts = { stroke: this.activeColor, strokeWidth: this.strokeWidth, fill: 'transparent', left: 100, top: 100 };
-
-      if (shape === 'rect') {
-        obj = new fabric.Rect({ ...opts, width: 150, height: 100 });
-      } else if (shape === 'circle') {
-        obj = new fabric.Circle({ ...opts, radius: 60 });
-      } else if (shape === 'line') {
-        obj = new fabric.Line([50, 50, 200, 200], opts);
-      } else if (shape === 'arrow') {
-        obj = new fabric.Line([50, 100, 200, 100], { ...opts, strokeWidth: 3 });
-      }
-
-      if (obj) {
-        obj.id = Math.random().toString(36).substring(2, 9);
-        this.canvas.add(obj);
-        this.canvas.setActiveObject(obj);
-        this.canvas.renderAll();
-        // Object added will be fired automatically, which handles saveHistory and ws send
-      }
-    } catch (e) {
-      console.warn('Fabric shape error:', e);
-    }
+  addShape(shape: string): void {
+    this.canvasService.addShape(shape);
   }
 
   undo(): void {
-    if (!this.canvas || this.historyIndex <= 0) return;
-    this.historyIndex--;
-    this.loadHistoryAndBroadcast(this.history[this.historyIndex]);
+    this.canvasService.undo();
   }
 
   redo(): void {
-    if (!this.canvas || this.historyIndex >= this.history.length - 1) return;
-    this.historyIndex++;
-    this.loadHistoryAndBroadcast(this.history[this.historyIndex]);
-  }
-
-  private loadHistoryAndBroadcast(json: string): void {
-    this.isReceivingSync = true;
-    this.canvas.loadFromJSON(json).then(() => {
-      this.canvas.renderAll();
-      this.isReceivingSync = false;
-      this.broadcastCanvas();
-    }).catch((err: any) => {
-      console.error('Error loading history:', err);
-      this.isReceivingSync = false;
-    });
+    this.canvasService.redo();
   }
 
   clearCanvas(): void {
-    if (!this.canvas) return;
-    this.canvas.clear();
-    this.canvas.backgroundColor = '#ffffff';
-    this.canvas.renderAll();
-    this.strokeCount = 0;
-    this.saveHistory();
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: 'clear' }));
-    }
+    this.canvasService.clearCanvas();
   }
 
   saveCanvas(): void {
-    if (!this.canvas) return;
-    const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1 });
-    const link = document.createElement('a');
-    link.download = `whiteboard-${this.roomId}-${Date.now()}.png`;
-    link.href = dataURL;
-    link.click();
+    this.canvasService.saveCanvas(this.roomId);
   }
 
   async shareRoom(): Promise<void> {
@@ -510,48 +134,38 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (navigator.share) {
       try {
-        await navigator.share({
-          title,
-          text,
-          url
-        });
+        await navigator.share({ title, text, url });
       } catch (err) {
         console.error('Error sharing:', err);
       }
     } else {
       navigator.clipboard.writeText(url).then(() => {
         alert('Share link copied to clipboard!');
-      }).catch(err => {
-        console.error('Could not copy text: ', err);
-      });
+      }).catch(err => console.error('Could not copy text: ', err));
     }
   }
 
   joinRoom(): void {
     const code = this.joinCode.trim();
     if (code) {
-      this.router.navigate(['/whiteboard', code]).catch(err => {
-        console.error('Navigation error:', err);
-      });
+      this.router.navigate(['/whiteboard', code]);
       this.joinCode = '';
     }
   }
 
   generateNewRoom(): void {
     const randomCode = Math.random().toString(36).substring(2, 8);
-    this.router.navigate(['/whiteboard', randomCode]).catch(err => {
-      console.error('Navigation error:', err);
-    });
+    this.router.navigate(['/whiteboard', randomCode]);
   }
 
   leaveRoom(): void {
-    if (this.isAdmin && this.connectedUsers.length > 1) {
+    if (this.sync.isAdmin && this.sync.connectedUsers.length > 1) {
       if (confirm('You are the Admin. Do you want to DISBAND the room (kick everyone)? \n\nClick OK to Disband, or Cancel to automatically pass Admin to someone else and leave.')) {
-        this.ws?.send(JSON.stringify({ type: 'disband_room' }));
+        this.sync.sendMessage({ type: 'disband_room' });
         this.closeAndLeave();
         return;
       } else {
-        const nextUser = this.connectedUsers.find(u => u.id !== this.userId);
+        const nextUser = this.sync.connectedUsers.find(u => u.id !== this.userId);
         if (nextUser) {
            this.promoteAdmin(nextUser.id);
         }
@@ -561,17 +175,12 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private closeAndLeave(): void {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-    this.router.navigate(['/dashboard']).catch(err => {
-      console.error('Navigation error:', err);
-    });
+    this.sync.disconnect();
+    this.router.navigate(['/dashboard']);
   }
 
   handleAvatarClick(targetUserId: string): void {
-    if (!this.isAdmin || targetUserId === this.userId) return;
+    if (!this.sync.isAdmin || targetUserId === this.sync.currentUserId) return;
     
     if (confirm(`Do you want to make this user the Admin?\n\nClick OK to promote them to Admin. Click Cancel to toggle their Drawing permissions instead.`)) {
       this.promoteAdmin(targetUserId);
@@ -581,18 +190,18 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   toggleAccess(targetUserId: string): void {
-    if (!this.isAdmin) return;
-    this.ws?.send(JSON.stringify({ type: 'toggle_access', target_id: targetUserId }));
+    if (!this.sync.isAdmin) return;
+    this.sync.sendMessage({ type: 'toggle_access', target_id: targetUserId });
   }
 
   promoteAdmin(targetUserId: string): void {
-    if (!this.isAdmin) return;
-    this.ws?.send(JSON.stringify({ type: 'promote_admin', target_id: targetUserId }));
+    if (!this.sync.isAdmin) return;
+    this.sync.sendMessage({ type: 'promote_admin', target_id: targetUserId });
   }
 
   kickUser(targetUserId: string): void {
-    if (!this.isAdmin) return;
-    this.ws?.send(JSON.stringify({ type: 'kick_user', target_id: targetUserId }));
+    if (!this.sync.isAdmin) return;
+    this.sync.sendMessage({ type: 'kick_user', target_id: targetUserId });
   }
 
   toggleMenu(userId: string): void {
@@ -603,54 +212,20 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isSidebarOpen = !this.isSidebarOpen;
   }
 
-  private saveHistory(): void {
-    if (!this.canvas) return;
-    const json = JSON.stringify(this.canvas.toJSON());
-    this.history = this.history.slice(0, this.historyIndex + 1);
-    this.history.push(json);
-    if (this.history.length > 50) {
-      this.history.shift();
-    } else {
-      this.historyIndex = this.history.length - 1;
-    }
-  }
-
-  private loadHistory(json: string): void {
-    this.canvas.loadFromJSON(json, () => this.canvas.renderAll());
-  }
-
-  getRemoteCursors() {
-    return Object.values(this.remoteCursors);
-  }
-
-  ngOnDestroy(): void {
-    if (this.ws) {
-      this.ws.close();
-    }
-    if (this.canvas) {
-      this.canvas.dispose();
-    }
-  }
-
   async solveWithAI(): Promise<void> {
-    if (!this.canvas) return;
+    if (!this.canvasService.canvas) return;
     this.isSolving = true;
     this.aiResponse = null;
     this.aiError = null;
 
     try {
-      // Get canvas image as base64 string
-      const dataURL = this.canvas.toDataURL({ format: 'png', quality: 1 });
-      
-      // Convert base64 to Blob, then to File
+      const dataURL = this.canvasService.canvas.toDataURL({ format: 'png', quality: 1 });
       const res = await fetch(dataURL);
       const blob = await res.blob();
       const file = new File([blob], `whiteboard-${this.roomId}-${Date.now()}.png`, { type: 'image/png' });
 
-      // Upload image
       this.aiService.uploadImage(file).subscribe({
         next: (uploadRes) => {
-          // Get answer
           this.aiService.solveFromPhoto(uploadRes.image_id, { language: 'en' }).subscribe({
             next: (answerRes) => {
               this.aiResponse = answerRes;
@@ -681,6 +256,9 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.aiError = null;
   }
 
-  // FormsModule needed for ngModel in toolbar
-  [key: string]: any;
+  ngOnDestroy(): void {
+    if (this.sub) this.sub.unsubscribe();
+    this.sync.disconnect();
+  }
+
 }

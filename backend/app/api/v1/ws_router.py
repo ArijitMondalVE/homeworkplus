@@ -3,8 +3,12 @@ WebSocket endpoints — real-time whiteboard and chat.
 """
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
+from pydantic import ValidationError
 
 from app.websocket.manager import ws_manager
+from app.auth.security import verify_access_token
+from app.services.whiteboard_service import WhiteboardService
+from app.schemas.ws_schemas import BaseWSMessage
 
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
@@ -15,93 +19,64 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
     Real-time collaborative whiteboard.
     Message types: canvas_update, cursor_move, clear, undo
     """
-    user_id = websocket.query_params.get("user_id", "anonymous")
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=1008, reason="Missing token")
+        return
+        
+    payload = verify_access_token(token)
+    if not payload:
+        await websocket.close(code=1008, reason="Invalid token")
+        return
+        
+    user_id = payload.get("sub", "anonymous")
     user_name = websocket.query_params.get("user_name", "Anonymous")
-    await ws_manager.connect(websocket, f"whiteboard:{room_id}", user_id, user_name)
+    
+    room_key = f"whiteboard:{room_id}"
+    await ws_manager.connect(websocket, room_key, user_id, user_name)
 
     try:
         while True:
-            data = await websocket.receive_json()
-            msg_type = data.get("type", "unknown")
-
-            if msg_type in ("canvas_update", "cursor_move", "clear", "undo", "add_object", "object_added", "object_modified", "draw_start", "draw_move", "draw_end"):
-                # Enforce drawing permissions
-                room_key = f"whiteboard:{room_id}"
-                admin_id = ws_manager.room_admins.get(room_key)
-                allowed_drawers = ws_manager.room_drawers.get(room_key, set())
+            raw_data = await websocket.receive_json()
+            try:
+                msg = BaseWSMessage(**raw_data)
+                msg_type = msg.type
+            except ValidationError as e:
+                logger.error(f"Invalid WebSocket message: {e}")
+                continue
                 
-                print(f"DEBUG: msg={msg_type}, sender={user_id}, admin={admin_id}, allowed={allowed_drawers}")
-                if user_id != admin_id and user_id not in allowed_drawers:
-                    print(f"DEBUG: IGNORING unauthorized draw from {user_id}")
-                    # Silently ignore unauthorized drawing commands
+            data = raw_data
+
+            if msg_type in ("canvas_update", "cursor_move", "clear", "undo", "add_object", "object_added", "object_modified", "object_removed", "draw_start", "draw_move", "draw_end"):
+                
+                can_draw = await WhiteboardService.enforce_drawing_permissions(room_key, user_id)
+                if not can_draw:
                     continue
 
-                print(f"DEBUG: Broadcasting {msg_type} from {user_id} to room {room_key}")
+                await WhiteboardService.update_server_state(room_key, msg_type, data.get("data"))
 
-                # Broadcast to all peers in the room
-                payload = data.copy()
-                payload["sender"] = user_id
+                payload_msg = data.copy()
+                payload_msg["sender"] = user_id
                 await ws_manager.broadcast_to_room(
                     room_id=room_key,
-                    message=payload,
+                    message=payload_msg,
                     exclude=websocket,
                 )
             
             elif msg_type == "toggle_access":
-                room_key = f"whiteboard:{room_id}"
-                if user_id == ws_manager.room_admins.get(room_key):
-                    target_id = data.get("target_id")
-                    if target_id in ws_manager.room_drawers[room_key]:
-                        ws_manager.room_drawers[room_key].discard(target_id)
-                    else:
-                        ws_manager.room_drawers[room_key].add(target_id)
-                    
-                    await ws_manager.broadcast_to_room(
-                        room_id=room_key,
-                        message={"type": "permissions_update", "allowed_drawers": list(ws_manager.room_drawers[room_key])}
-                    )
+                await WhiteboardService.toggle_access(room_key, user_id, data.get("target_id"))
             
             elif msg_type == "kick_user":
-                room_key = f"whiteboard:{room_id}"
-                if user_id == ws_manager.room_admins.get(room_key):
-                    target_id = data.get("target_id")
-                    await ws_manager.broadcast_to_room(
-                        room_id=room_key,
-                        message={"type": "kicked", "target_id": target_id}
-                    )
+                await WhiteboardService.kick_user(room_key, user_id, data.get("target_id"))
             
             elif msg_type == "promote_admin":
-                room_key = f"whiteboard:{room_id}"
-                if user_id == ws_manager.room_admins.get(room_key):
-                    target_id = data.get("target_id")
-                    ws_manager.room_admins[room_key] = target_id
-                    ws_manager.room_drawers[room_key].add(target_id)
-                    
-                    await ws_manager.broadcast_to_room(
-                        room_id=room_key,
-                        message={"type": "admin_promoted", "admin_id": target_id, "allowed_drawers": list(ws_manager.room_drawers[room_key])}
-                    )
+                await WhiteboardService.promote_admin(room_key, user_id, data.get("target_id"))
             
             elif msg_type == "disband_room":
-                room_key = f"whiteboard:{room_id}"
-                if user_id == ws_manager.room_admins.get(room_key):
-                    await ws_manager.broadcast_to_room(
-                        room_id=room_key,
-                        message={"type": "room_disbanded"}
-                    )
-                    # Disconnect all active connections
-                    connections = list(ws_manager.active_connections.get(room_key, []))
-                    for ws in connections:
-                        await ws.close()
-                        ws_manager.disconnect(ws, room_key)
+                await WhiteboardService.disband_room(room_key, user_id)
+                        
     except WebSocketDisconnect:
-        ws_manager.disconnect(websocket, f"whiteboard:{room_id}")
-        count = len(ws_manager.active_connections.get(f"whiteboard:{room_id}", []))
-        users = ws_manager.get_room_users(f"whiteboard:{room_id}")
-        await ws_manager.broadcast_to_room(
-            f"whiteboard:{room_id}",
-            {"type": "user_left", "user_id": user_id, "user_count": count, "users": users},
-        )
+        await ws_manager.disconnect(websocket, room_key)
 
 
 @router.websocket("/chat/{session_id}")
@@ -110,13 +85,29 @@ async def chat_websocket(websocket: WebSocket, session_id: str):
     Real-time AI chat session.
     Message types: user_message, typing_start, typing_stop
     """
-    user_id = websocket.query_params.get("user_id", "anonymous")
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=1008, reason="Missing token")
+        return
+        
+    payload = verify_access_token(token)
+    if not payload:
+        await websocket.close(code=1008, reason="Invalid token")
+        return
+        
+    user_id = payload.get("sub", "anonymous")
+    
     await ws_manager.connect(websocket, f"chat:{session_id}", user_id)
 
     try:
         while True:
-            data = await websocket.receive_json()
-            msg_type = data.get("type", "unknown")
+            raw_data = await websocket.receive_json()
+            try:
+                msg = BaseWSMessage(**raw_data)
+                msg_type = msg.type
+            except ValidationError as e:
+                logger.error(f"Invalid WebSocket message: {e}")
+                continue
 
             if msg_type == "user_message":
                 # Echo for now — full LLM integration via HTTP /ai/chat endpoint
@@ -131,4 +122,4 @@ async def chat_websocket(websocket: WebSocket, session_id: str):
                     exclude=websocket,
                 )
     except WebSocketDisconnect:
-        ws_manager.disconnect(websocket, f"chat:{session_id}")
+        await ws_manager.disconnect(websocket, f"chat:{session_id}")
