@@ -208,7 +208,7 @@ export class WhiteboardCanvasService implements OnDestroy {
           this.canvas.renderAll();
         }
       } else if (msg.type === 'draw_start') {
-        if (msg.sender === this.sync.currentUserId) return;
+        if (msg.client_id === this.sync.clientId) return;
         const { id, x, y, color, width } = msg.data;
         const point = { x, y };
         
@@ -230,7 +230,7 @@ export class WhiteboardCanvasService implements OnDestroy {
         this.canvas.add(path);
         this.isReceivingSync = false;
       } else if (msg.type === 'draw_move') {
-        if (msg.sender === this.sync.currentUserId) return;
+        if (msg.client_id === this.sync.clientId) return;
         const { id, x, y } = msg.data;
         const point = { x, y };
         if (this.remotePaths[id]) {
@@ -244,7 +244,7 @@ export class WhiteboardCanvasService implements OnDestroy {
           this.isReceivingSync = false;
         }
       } else if (msg.type === 'draw_end') {
-        if (msg.sender === this.sync.currentUserId) return;
+        if (msg.client_id === this.sync.clientId) return;
         const { id } = msg.data;
         if (this.remotePaths[id]) {
           setTimeout(() => {

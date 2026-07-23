@@ -19,6 +19,7 @@ export interface ConnectedUser {
 })
 export class WhiteboardSyncService implements OnDestroy {
   ws: WebSocket | null = null;
+  clientId: string = Math.random().toString(36).substring(2, 15);
   
   // State
   roomId = 'main';
@@ -80,6 +81,7 @@ export class WhiteboardSyncService implements OnDestroy {
 
   sendMessage(payload: any): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      payload.client_id = this.clientId;
       this.ws.send(JSON.stringify(payload));
     }
   }
@@ -97,7 +99,7 @@ export class WhiteboardSyncService implements OnDestroy {
       if (msg.admin_id !== undefined) this.adminId = msg.admin_id;
       if (msg.allowed_drawers !== undefined) this.allowedDrawers = new Set(msg.allowed_drawers);
     } else if (msg.type === 'cursor_move') {
-      if (msg.sender !== this.currentUserId && msg.data) {
+      if (msg.client_id !== this.clientId && msg.data) {
         const senderInfo = this.connectedUsers.find(u => u.id === msg.sender);
         if (senderInfo) {
           this.remoteCursors[msg.sender] = { x: msg.data.x, y: msg.data.y, name: senderInfo.name };

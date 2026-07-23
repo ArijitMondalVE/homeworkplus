@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 class BaseWSMessage(BaseModel):
     type: str
     sender: Optional[str] = None
+    client_id: Optional[str] = None
 
 
 class TargetUserMessage(BaseWSMessage):
