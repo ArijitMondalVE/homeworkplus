@@ -24,7 +24,7 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
             data = await websocket.receive_json()
             msg_type = data.get("type", "unknown")
 
-            if msg_type in ("canvas_update", "cursor_move", "clear", "undo", "add_object", "object_added", "object_modified"):
+            if msg_type in ("canvas_update", "cursor_move", "clear", "undo", "add_object", "object_added", "object_modified", "draw_start", "draw_move", "draw_end"):
                 # Enforce drawing permissions
                 room_key = f"whiteboard:{room_id}"
                 admin_id = ws_manager.room_admins.get(room_key)

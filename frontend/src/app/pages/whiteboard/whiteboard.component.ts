@@ -54,6 +54,10 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
   ws: WebSocket | null = null;
   private isReceivingSync = false;
 
+  private isDrawing = false;
+  private currentDrawId = '';
+  private remotePaths: { [id: string]: { pathObj: any, pathData: any[] } } = {};
+
   constructor(
     private auth: AuthService,
     private route: ActivatedRoute,
@@ -135,6 +139,21 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
 
+      this.canvas.on('mouse:down', (o: any) => {
+        if (!this.canvas.isDrawingMode) return;
+        this.isDrawing = true;
+        this.currentDrawId = Math.random().toString(36).substring(2, 9);
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          const p = this.canvas.getScenePoint ? this.canvas.getScenePoint(o.e) : (o.scenePoint || { x: o.e.clientX, y: o.e.clientY });
+          const color = this.canvas.freeDrawingBrush.color;
+          const width = this.canvas.freeDrawingBrush.width;
+          this.ws.send(JSON.stringify({
+            type: 'draw_start',
+            data: { id: this.currentDrawId, x: p.x, y: p.y, color, width }
+          }));
+        }
+      });
+
       let lastMoveTime = 0;
       this.canvas.on('mouse:move', (o: any) => {
         const now = Date.now();
@@ -143,7 +162,25 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             const pointer = this.canvas.getScenePoint ? this.canvas.getScenePoint(o.e) : (o.scenePoint || { x: o.e.clientX, y: o.e.clientY });
             this.ws.send(JSON.stringify({ type: 'cursor_move', data: { x: pointer.x, y: pointer.y } }));
+            
+            if (this.isDrawing && this.canvas.isDrawingMode) {
+              this.ws.send(JSON.stringify({
+                type: 'draw_move',
+                data: { id: this.currentDrawId, x: pointer.x, y: pointer.y }
+              }));
+            }
           }
+        }
+      });
+
+      this.canvas.on('mouse:up', () => {
+        if (!this.isDrawing) return;
+        this.isDrawing = false;
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify({
+            type: 'draw_end',
+            data: { id: this.currentDrawId }
+          }));
         }
       });
 
@@ -196,11 +233,45 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
           this.isReceivingSync = true;
           const targetObj = this.canvas.getObjects().find((o: any) => o.id === msg.data.id);
           if (targetObj) {
-            targetObj.set(msg.data);
+            const { type, ...updateData } = msg.data;
+            targetObj.set(updateData);
             targetObj.setCoords();
             this.canvas.renderAll();
           }
           this.isReceivingSync = false;
+        } else if (msg.type === 'draw_start') {
+          if (msg.sender === this.userId) return;
+          const { id, x, y, color, width } = msg.data;
+          const pathData: any[] = [['M', x, y]];
+          const pathObj = new fabric.Path(pathData as any, {
+            fill: 'transparent',
+            stroke: color,
+            strokeWidth: width,
+            strokeLineCap: 'round',
+            strokeLineJoin: 'round',
+            selectable: false,
+            evented: false,
+            id: `temp_${id}`
+          });
+          this.remotePaths[id] = { pathObj, pathData };
+          this.canvas.add(pathObj);
+        } else if (msg.type === 'draw_move') {
+          if (msg.sender === this.userId) return;
+          const { id, x, y } = msg.data;
+          if (this.remotePaths[id]) {
+            const { pathObj, pathData } = this.remotePaths[id];
+            pathData.push(['L', x, y]);
+            pathObj.set({ path: pathData as any });
+            this.canvas.requestRenderAll();
+          }
+        } else if (msg.type === 'draw_end') {
+          if (msg.sender === this.userId) return;
+          const { id } = msg.data;
+          if (this.remotePaths[id]) {
+            this.canvas.remove(this.remotePaths[id].pathObj);
+            delete this.remotePaths[id];
+            this.canvas.requestRenderAll();
+          }
         } else if (msg.type === 'cursor_move') {
           if (msg.sender !== this.userId && msg.data) {
             const senderInfo = this.connectedUsers.find(u => u.id === msg.sender);
