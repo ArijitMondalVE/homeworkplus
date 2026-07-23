@@ -120,7 +120,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
       this.setTool('pen');
       
       this.canvas.on('object:added', (e: any) => {
-        if (this.isReceivingSync || !e.target) return;
+        if (this.isReceivingSync || !e.target || (e.target.id && e.target.id.startsWith('temp_'))) return;
         if (!e.target.id) {
           e.target.id = Math.random().toString(36).substring(2, 9);
         }
@@ -132,7 +132,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
       this.canvas.on('object:modified', (e: any) => {
-        if (this.isReceivingSync || !e.target) return;
+        if (this.isReceivingSync || !e.target || (e.target.id && e.target.id.startsWith('temp_'))) return;
         this.saveHistory();
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send(JSON.stringify({ type: 'object_modified', data: e.target.toJSON(['id']) }));
@@ -215,30 +215,29 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
           this.strokeCount = 0;
           this.isReceivingSync = false;
         } else if (msg.type === 'object_added') {
-          this.isReceivingSync = true;
           // @ts-ignore
           fabric.util.enlivenObjects([msg.data]).then((objects: any[]) => {
             const obj = objects[0];
             const existing = this.canvas.getObjects().find((o: any) => o.id === obj.id);
             if (!existing) {
+              this.isReceivingSync = true;
               this.canvas.add(obj);
+              this.isReceivingSync = false;
               this.canvas.renderAll();
             }
-            this.isReceivingSync = false;
           }).catch((err: any) => {
             console.error('Error enlivening object:', err);
-            this.isReceivingSync = false;
           });
         } else if (msg.type === 'object_modified') {
-          this.isReceivingSync = true;
           const targetObj = this.canvas.getObjects().find((o: any) => o.id === msg.data.id);
           if (targetObj) {
             const { type, ...updateData } = msg.data;
+            this.isReceivingSync = true;
             targetObj.set(updateData);
             targetObj.setCoords();
+            this.isReceivingSync = false;
             this.canvas.renderAll();
           }
-          this.isReceivingSync = false;
         } else if (msg.type === 'draw_start') {
           if (msg.sender === this.userId) return;
           const { id, x, y, color, width } = msg.data;
@@ -254,21 +253,27 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
             id: `temp_${id}`
           });
           this.remotePaths[id] = { pathObj, pathData };
+          this.isReceivingSync = true;
           this.canvas.add(pathObj);
+          this.isReceivingSync = false;
         } else if (msg.type === 'draw_move') {
           if (msg.sender === this.userId) return;
           const { id, x, y } = msg.data;
           if (this.remotePaths[id]) {
             const { pathObj, pathData } = this.remotePaths[id];
             pathData.push(['L', x, y]);
+            this.isReceivingSync = true;
             pathObj.set({ path: pathData as any });
+            this.isReceivingSync = false;
             this.canvas.requestRenderAll();
           }
         } else if (msg.type === 'draw_end') {
           if (msg.sender === this.userId) return;
           const { id } = msg.data;
           if (this.remotePaths[id]) {
+            this.isReceivingSync = true;
             this.canvas.remove(this.remotePaths[id].pathObj);
+            this.isReceivingSync = false;
             delete this.remotePaths[id];
             this.canvas.requestRenderAll();
           }
