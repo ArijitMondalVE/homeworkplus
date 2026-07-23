@@ -127,7 +127,11 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         this.strokeCount++;
         this.saveHistory();
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({ type: 'object_added', data: e.target.toJSON(['id']) }));
+          const payload: any = { type: 'object_added', data: e.target.toJSON(['id']) };
+          if (!this.isDrawing && this.currentDrawId) {
+            payload.replaces = this.currentDrawId;
+          }
+          this.ws.send(JSON.stringify(payload));
         }
       });
 
@@ -157,7 +161,7 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
       let lastMoveTime = 0;
       this.canvas.on('mouse:move', (o: any) => {
         const now = Date.now();
-        if (now - lastMoveTime > 30) { // Throttle to ~30 FPS max
+        if (now - lastMoveTime > 16) { // Throttle to ~60 FPS max
           lastMoveTime = now;
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             const pointer = this.canvas.getScenePoint ? this.canvas.getScenePoint(o.e) : (o.scenePoint || { x: o.e.clientX, y: o.e.clientY });
@@ -221,6 +225,12 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
             const existing = this.canvas.getObjects().find((o: any) => o.id === obj.id);
             if (!existing) {
               this.isReceivingSync = true;
+              
+              if (msg.replaces && this.remotePaths[msg.replaces]) {
+                this.canvas.remove(this.remotePaths[msg.replaces].pathObj);
+                delete this.remotePaths[msg.replaces];
+              }
+              
               this.canvas.add(obj);
               this.isReceivingSync = false;
               this.canvas.renderAll();
@@ -270,12 +280,19 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
         } else if (msg.type === 'draw_end') {
           if (msg.sender === this.userId) return;
           const { id } = msg.data;
+          // Note: we do NOT remove the remote path immediately here!
+          // We wait for the 'object_added' event with the 'replaces' field to swap it perfectly.
+          // Fallback cleanup in case 'object_added' fails or never arrives
           if (this.remotePaths[id]) {
-            this.isReceivingSync = true;
-            this.canvas.remove(this.remotePaths[id].pathObj);
-            this.isReceivingSync = false;
-            delete this.remotePaths[id];
-            this.canvas.requestRenderAll();
+            setTimeout(() => {
+              if (this.remotePaths[id]) {
+                this.isReceivingSync = true;
+                this.canvas.remove(this.remotePaths[id].pathObj);
+                this.isReceivingSync = false;
+                delete this.remotePaths[id];
+                this.canvas.requestRenderAll();
+              }
+            }, 3000);
           }
         } else if (msg.type === 'cursor_move') {
           if (msg.sender !== this.userId && msg.data) {
@@ -591,7 +608,11 @@ export class WhiteboardComponent implements OnInit, AfterViewInit, OnDestroy {
     const json = JSON.stringify(this.canvas.toJSON());
     this.history = this.history.slice(0, this.historyIndex + 1);
     this.history.push(json);
-    this.historyIndex = this.history.length - 1;
+    if (this.history.length > 50) {
+      this.history.shift();
+    } else {
+      this.historyIndex = this.history.length - 1;
+    }
   }
 
   private loadHistory(json: string): void {

@@ -39,9 +39,11 @@ async def whiteboard_websocket(websocket: WebSocket, room_id: str):
                 print(f"DEBUG: Broadcasting {msg_type} from {user_id} to room {room_key}")
 
                 # Broadcast to all peers in the room
+                payload = data.copy()
+                payload["sender"] = user_id
                 await ws_manager.broadcast_to_room(
                     room_id=room_key,
-                    message={"type": msg_type, "data": data.get("data"), "sender": user_id},
+                    message=payload,
                     exclude=websocket,
                 )
             
