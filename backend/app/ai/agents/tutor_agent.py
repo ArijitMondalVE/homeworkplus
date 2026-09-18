@@ -264,8 +264,27 @@ class TutorAgent:
             elif msg["role"] == "assistant":
                 lc_messages.append(AIMessage(content=msg["content"]))
 
-        response = await llm.ainvoke(lc_messages)
-        return {
-            "reply": response.content,
-            "tokens_used": response.usage_metadata.get("total_tokens", 0) if hasattr(response, "usage_metadata") else 0,
-        }
+        try:
+            response = await llm.ainvoke(lc_messages)
+            return {
+                "reply": response.content,
+                "tokens_used": response.usage_metadata.get("total_tokens", 0) if hasattr(response, "usage_metadata") else 0,
+            }
+        except Exception as e:
+            logger.error(f"[TutorAgent] Chat LLM call failed: {e}")
+            try:
+                # Try fallback
+                fallback = self._get_anthropic() if settings.PRIMARY_LLM == "openai" else self._get_openai()
+                if fallback:
+                    response = await fallback.ainvoke(lc_messages)
+                    return {
+                        "reply": response.content,
+                        "tokens_used": response.usage_metadata.get("total_tokens", 0) if hasattr(response, "usage_metadata") else 0,
+                    }
+            except Exception as e2:
+                logger.error(f"[TutorAgent] Chat Fallback LLM failed: {e2}")
+            
+            return {
+                "reply": "Sorry, I had trouble connecting. Please try again.",
+                "tokens_used": 0,
+            }
