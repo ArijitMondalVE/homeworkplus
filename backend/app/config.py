@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     ALLOWED_IMAGE_TYPES: str = "image/jpeg,image/png,image/webp,image/gif"
 
     # ── CORS ──────────────────────────────────────────────────────
-    CORS_ORIGINS: str = "http://localhost:4200,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:4200,http://localhost:3000,https://homeworkplus.vercel.app"
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
