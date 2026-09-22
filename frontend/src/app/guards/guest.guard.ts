@@ -1,15 +1,6 @@
-import { inject } from '@angular/core';
-import { Router, type CanActivateFn } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { type CanActivateFn } from '@angular/router';
 
+// Authentication temporarily disabled — allow visiting guest routes freely
 export const guestGuard: CanActivateFn = (_route, _state) => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-
-  if (auth.isAuthenticated()) {
-    router.navigate(['/dashboard']);
-    return false;
-  }
-
   return true;
 };

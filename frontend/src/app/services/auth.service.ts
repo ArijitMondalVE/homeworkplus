@@ -31,11 +31,29 @@ export interface TokenResponse {
   user: User;
 }
 
+export const DEFAULT_GUEST_USER: User = {
+  id: '00000000-0000-0000-0000-000000000001',
+  email: 'student@homeworkplus.ai',
+  username: 'student',
+  full_name: 'Guest Student',
+  grade_level: 'Grade 10',
+  preferred_language: 'en',
+  xp_points: 1250,
+  level: 3,
+  streak_days: 5,
+  total_questions_solved: 28,
+  total_study_minutes: 145,
+  is_active: true,
+  is_premium: true,
+  role: 'student',
+  created_at: new Date().toISOString(),
+};
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly API = `${environment.apiUrl}/auth`;
 
-  // Reactive state using Angular signals
+  // Reactive state using Angular signals — defaults to guest user when auth is disabled
   currentUser = signal<User | null>(this.loadUserFromStorage());
   isLoading = signal(false);
 
@@ -72,7 +90,7 @@ export class AuthService {
   logout(): void {
     this.http.post(`${this.API}/logout`, {}).subscribe({ error: () => {} });
     this.clearTokens();
-    this.router.navigate(['/auth']);
+    this.router.navigate(['/dashboard']);
   }
 
   refreshToken(): Observable<TokenResponse> {
@@ -94,15 +112,8 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    const token = this.getAccessToken();
-    if (!token) return false;
-
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.exp * 1000 > Date.now();
-    } catch {
-      return false;
-    }
+    // Authentication temporarily disabled
+    return true;
   }
 
   getAccessToken(): string | null {
@@ -121,15 +132,15 @@ export class AuthService {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    this.currentUser.set(null);
+    this.currentUser.set(DEFAULT_GUEST_USER);
   }
 
-  private loadUserFromStorage(): User | null {
+  private loadUserFromStorage(): User {
     try {
       const raw = localStorage.getItem('user');
-      return raw ? JSON.parse(raw) : null;
+      return raw ? JSON.parse(raw) : DEFAULT_GUEST_USER;
     } catch {
-      return null;
+      return DEFAULT_GUEST_USER;
     }
   }
 }
